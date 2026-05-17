@@ -28,9 +28,5 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copia o build estático
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Healthcheck simples
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget -q --spider http://localhost:3000/ || exit 1
-
-EXPOSE 3000
+EXPOSE 80 3000
 CMD ["nginx", "-g", "daemon off;"]
