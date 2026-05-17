@@ -25,18 +25,39 @@ type AuthState = {
 
 const AuthCtx = createContext<AuthState | null>(null);
 
-// === Cache em nível de módulo: garante que múltiplas chamadas de loadProfile
-//     para o mesmo userId (causadas por React StrictMode ou eventos seguidos
-//     de onAuthStateChange) compartilhem a mesma promise — só vai uma request
-//     ao Supabase.
+// === Cache module-level: dedup + localStorage fallback
+//     Resolve dois problemas:
+//     1) React StrictMode chama loadProfile 2x → mesma promise compartilhada
+//     2) Supabase às vezes demora pra responder profile → restauramos do
+//        localStorage imediatamente, e atualizamos em background sem
+//        bloquear UI.
 let inflightProfile: { userId: string; promise: Promise<Profile | null> } | null = null;
 
+const CACHE_KEY = "advox-profile-cache-v1";
+
+function readCachedProfile(userId: string): Profile | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as { userId: string; profile: Profile };
+    if (data.userId !== userId) return null;
+    return data.profile;
+  } catch { return null; }
+}
+
+function writeCachedProfile(userId: string, profile: Profile) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ userId, profile })); } catch { /* ignore quota */ }
+}
+
+function clearCachedProfile() {
+  try { localStorage.removeItem(CACHE_KEY); } catch { /* ignore */ }
+}
+
 async function fetchProfileWithRetry(userId: string, attempt = 1): Promise<Profile | null> {
-  // Se já existe uma busca em andamento pro mesmo userId, devolve a mesma promise
   if (inflightProfile?.userId === userId) return inflightProfile.promise;
 
   const promise = (async (): Promise<Profile | null> => {
-    const TIMEOUT_MS = 10000; // 10s por tentativa
+    const TIMEOUT_MS = 15000;
     const query = supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
     const timeout = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error(`Timeout ${TIMEOUT_MS}ms (tentativa ${attempt})`)), TIMEOUT_MS)
@@ -46,10 +67,10 @@ async function fetchProfileWithRetry(userId: string, attempt = 1): Promise<Profi
       if (result.error) throw result.error;
       return result.data;
     } catch (e) {
-      // Retry automático na primeira falha (cold start do Supabase)
-      if (attempt < 2) {
-        console.warn(`[Advox] fetchProfile tentativa ${attempt} falhou, tentando de novo:`, (e as Error).message);
-        inflightProfile = null; // libera pra próxima tentativa
+      if (attempt < 3) {
+        console.warn(`[Advox] fetchProfile tentativa ${attempt} falhou, retry:`, (e as Error).message);
+        inflightProfile = null;
+        await new Promise(r => setTimeout(r, 1000 * attempt));
         return fetchProfileWithRetry(userId, attempt + 1);
       }
       throw e;
@@ -72,6 +93,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadProfile = async (userId: string) => {
     setProfileError(null);
+
+    // 1) Restaura cache imediatamente — UI renderiza sem esperar rede
+    const cached = readCachedProfile(userId);
+    if (cached) {
+      console.log("[Advox] loadProfile cache hit — renderizando imediato");
+      setProfile(cached);
+    }
+
     try {
       const data = await fetchProfileWithRetry(userId);
       console.log("[Advox] loadProfile result", { userId, data: data ? "found" : "null" });
@@ -88,22 +117,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const { error: insErr } = await supabase.from("profiles").insert(novo as never);
           if (insErr) {
             console.error("[Advox] loadProfile insert error", insErr);
-            setProfileError(`Erro ao criar perfil: ${insErr.message}`);
+            if (!cached) setProfileError(`Erro ao criar perfil: ${insErr.message}`);
             return;
           }
           // re-busca após criar
           inflightProfile = null;
           const created = await fetchProfileWithRetry(u.id);
-          setProfile(created);
+          if (created) {
+            writeCachedProfile(u.id, created);
+            setProfile(created);
+          }
           return;
         }
       }
-      setProfile(data);
+      if (data) {
+        writeCachedProfile(userId, data);
+        setProfile(data);
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[Advox] loadProfile failed (após retry)", e);
-      setProfileError(`Não foi possível carregar seu perfil: ${msg}`);
-      setProfile(null);
+      // Se temos cache, NÃO bloqueia a UI — só loga.
+      // Realtime + reload manual vão eventualmente sincronizar.
+      if (cached) {
+        console.warn("[Advox] usando profile do cache; rede falhou:", msg);
+      } else {
+        setProfileError(`Não foi possível carregar seu perfil: ${msg}`);
+        setProfile(null);
+      }
     }
   };
 
@@ -163,7 +204,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           "postgres_changes",
           { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${userId}` },
           (payload) => {
-            setProfile(payload.new as Profile);
+            const next = payload.new as Profile;
+            writeCachedProfile(userId, next);
+            setProfile(next);
           }
         )
         .subscribe((status, err) => {
@@ -235,6 +278,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    clearCachedProfile();
     await supabase.auth.signOut();
     setProfile(null);
   };
