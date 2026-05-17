@@ -1,0 +1,299 @@
+:root {
+  /* surfaces */
+  --bg:           oklch(0.985 0.003 240);
+  --surface:      oklch(1 0 0);
+  --surface-2:    oklch(0.975 0.004 250);
+  --surface-3:    oklch(0.955 0.005 250);
+  --hover:        oklch(0.96 0.006 250);
+
+  /* lines */
+  --line:         oklch(0.91 0.006 250);
+  --line-2:       oklch(0.86 0.008 250);
+  --line-strong:  oklch(0.78 0.01 250);
+
+  /* text */
+  --ink:          oklch(0.20 0.02 255);
+  --ink-2:        oklch(0.36 0.02 255);
+  --ink-3:        oklch(0.50 0.015 255);
+  --ink-4:        oklch(0.62 0.012 255);
+
+  /* status (cores semânticas — não mudam com tema) */
+  --rose:         oklch(0.55 0.16 25);
+  --rose-soft:    oklch(0.95 0.03 25);
+  --rose-border:  oklch(0.85 0.05 25);
+  --amber:        oklch(0.70 0.14 75);
+  --amber-soft:   oklch(0.96 0.04 80);
+  --amber-border: oklch(0.85 0.05 75);
+  --amber-text:   oklch(0.45 0.10 70);
+  --green:        oklch(0.55 0.12 145);
+  --green-soft:   oklch(0.95 0.04 145);
+  --blue:         oklch(0.55 0.13 240);
+  --blue-soft:    oklch(0.95 0.03 240);
+  --teal:         oklch(0.58 0.10 195);
+  --violet:       oklch(0.55 0.13 290);
+}
+
+/* === Brand — Sinal: azul-elétrico + magenta === */
+:root {
+  --navy:         oklch(0.38 0.18 250);
+  --navy-2:       oklch(0.30 0.18 250);
+  --navy-ink:     oklch(0.99 0.005 250);
+  --gold:         oklch(0.58 0.22 340);
+  --gold-2:       oklch(0.48 0.22 340);
+  --gold-ink:     oklch(0.99 0.005 340);
+  --gold-soft:    oklch(0.96 0.04 340);
+  --gold-soft-2:  oklch(0.92 0.07 340);
+  --gold-border:  oklch(0.85 0.08 340);
+  --gold-deep:    oklch(0.42 0.18 340);
+}
+
+/* pipeline + shadows — globais */
+:root {
+  --pc-novo:        oklch(0.55 0.02 255);
+  --pc-contato:     oklch(0.55 0.11 235);
+  --pc-proposta:    oklch(0.55 0.12 285);
+  --pc-travado:     oklch(0.55 0.14 35);
+  --pc-aguardando:  oklch(0.62 0.13 80);
+  --pc-negociacao:  oklch(0.58 0.10 195);
+  --pc-fechado:     oklch(0.50 0.13 150);
+  --pc-perdido:     oklch(0.50 0.04 25);
+
+  --pj-recebido:    oklch(0.55 0.02 255);
+  --pj-analise:     oklch(0.55 0.11 235);
+  --pj-contato:     oklch(0.55 0.12 285);
+  --pj-honorarios:  oklch(0.62 0.13 80);
+  --pj-contratou:   oklch(0.58 0.10 195);
+  --pj-documentacao:oklch(0.55 0.10 260);
+  --pj-extrajudicial:oklch(0.55 0.14 35);
+  --pj-judicial:    oklch(0.50 0.16 25);
+  --pj-liberado:    oklch(0.50 0.13 150);
+  --pj-naoliberado: oklch(0.50 0.04 25);
+  --pj-recusou:     oklch(0.55 0.02 255);
+
+  --shadow-sm: 0 1px 0 rgba(20, 28, 50, 0.04), 0 1px 2px rgba(20, 28, 50, 0.04);
+  --shadow-md: 0 1px 0 rgba(20, 28, 50, 0.04), 0 6px 16px -8px rgba(20, 28, 50, 0.08);
+  --shadow-lg: 0 1px 0 rgba(20, 28, 50, 0.04), 0 24px 48px -20px rgba(20, 28, 50, 0.18);
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "ss01", "cv01";
+}
+.mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-feature-settings: "zero", "ss01"; }
+.serif { font-family: 'Newsreader', Georgia, serif; }
+
+button { font-family: inherit; }
+input, textarea, select { font-family: inherit; font-size: inherit; color: inherit; }
+input:focus, textarea:focus, select:focus { outline: none; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: oklch(0.85 0.01 250); border-radius: 8px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: oklch(0.75 0.015 250); }
+
+.hairline { box-shadow: inset 0 0 0 1px var(--line); }
+.ring-focus:focus-within { box-shadow: 0 0 0 3px oklch(0.28 0.06 255 / 0.12), inset 0 0 0 1px var(--navy); }
+
+.dotgrid {
+  background-image: radial-gradient(oklch(0.85 0.01 250) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.grab { cursor: grab; }
+.grab:active { cursor: grabbing; }
+
+::selection { background: oklch(0.85 0.05 80); color: var(--ink); }
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.pulse { animation: pulse-soft 1.8s ease-in-out infinite; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fade-up 0.18s ease-out; }
+
+.sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+/* === Responsive utilities === */
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.scroll-x > table { min-width: max-content; }
+
+/* Hide on mobile / hide on desktop */
+.only-desktop { display: initial; }
+.only-mobile { display: none; }
+
+@media (max-width: 768px) {
+  .only-desktop { display: none !important; }
+  .only-mobile { display: initial !important; }
+  .only-mobile-flex { display: flex !important; }
+
+  /* Stack 4-col grids into 2 columns by default on mobile */
+  .grid-kpi { grid-template-columns: repeat(2, 1fr) !important; }
+  /* Detail layout: stack sidebar below main */
+  .grid-detail { grid-template-columns: 1fr !important; }
+  .grid-detail > aside { border-left: 0 !important; border-top: 1px solid var(--line); }
+  /* Two-column form fields stack */
+  .grid-2col { grid-template-columns: 1fr !important; }
+  .grid-3col { grid-template-columns: 1fr !important; }
+
+  /* Topbar shrinks padding */
+  .topbar { padding: 10px 12px !important; gap: 8px !important; }
+  /* Hide topbar search on mobile */
+  .topbar-search { display: none !important; }
+  /* Persona switcher labels become icons-only on mobile */
+  .persona-label { display: none !important; }
+
+  /* Modal goes full-screen on mobile */
+  .modal-shell { width: 100% !important; max-width: 100% !important; height: 100%; max-height: 100% !important; border-radius: 0 !important; }
+  .modal-backdrop { padding: 0 !important; }
+
+  /* Page padding scales down */
+  .page-pad { padding: 12px !important; gap: 12px !important; }
+
+  /* Headings shrink slightly */
+  .page-title { font-size: 18px !important; }
+
+  /* Notification panel becomes full-width */
+  .notif-panel { right: 8px !important; left: 8px !important; width: auto !important; top: 64px !important; }
+
+  /* Tables become horizontally scrollable on mobile */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table thead, table tbody { display: table; width: 100%; min-width: max-content; }
+
+  /* Filter rows wrap on mobile */
+  .filter-row { flex-wrap: wrap !important; }
+
+  /* Desbloquear bar: stack vertically, button centered below text */
+  .desbloq-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 12px 16px !important;
+  }
+  .desbloq-msg {
+    border-right: 0 !important;
+    padding-right: 0 !important;
+    justify-content: center !important;
+    text-align: center;
+  }
+  .desbloq-msg > span:last-child {
+    white-space: normal !important;
+  }
+  .desbloq-btn {
+    align-self: center !important;
+    width: 100%;
+    max-width: 320px;
+  }
+  .desbloq-fineprint {
+    margin-left: 0 !important;
+    text-align: center;
+    white-space: normal !important;
+  }
+
+  /* Toolbars: wrap items and let the search input grow full-width */
+  .toolbar-row {
+    flex-wrap: wrap !important;
+    align-items: stretch !important;
+  }
+  /* Search input inside a toolbar — full-width, drop the 320px min */
+  .toolbar-row > .ring-focus {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+  /* Right-aligned button cluster: drop the margin-left auto, take full row */
+  .toolbar-row .toolbar-actions {
+    margin-left: 0 !important;
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  /* Page-level header rows (title + actions) wrap on mobile */
+  header {
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  /* Profile header card: stack on mobile — avatar+info row, button below */
+  .perfil-card {
+    padding: 14px !important;
+    gap: 12px !important;
+  }
+  .perfil-card > button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Topbar: compact right cluster on mobile */
+  .topbar-actions { gap: 6px !important; }
+  .persona-switcher { padding: 1px !important; }
+  .persona-switcher button { padding: 5px 7px !important; }
+  .topbar-icon-btn { padding: 5px 6px !important; }
+  .topbar-user-btn { padding: 3px !important; }
+
+  /* Config screen: stack nav + content */
+  .grid-config {
+    grid-template-columns: 1fr !important;
+  }
+  .grid-config > nav {
+    flex-direction: row !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .grid-config > nav::-webkit-scrollbar { display: none; }
+  .grid-config > nav button { flex-shrink: 0; white-space: nowrap; }
+
+  /* Audit row: stack the columns into rows on mobile */
+  .audit-row {
+    grid-template-columns: 1fr auto !important;
+    gap: 6px !important;
+  }
+  .audit-row > :nth-child(1) { grid-column: 1 / -1; }
+  .audit-row > :nth-child(3) { grid-column: 1 / -1; }
+  .audit-row > :nth-child(4) { font-size: 10px; text-align: left !important; }
+
+  /* Header action clusters wrap — applies to any header > div */
+  header > div { flex-wrap: wrap !important; gap: 8px !important; }
+  /* And the search input inside such clusters takes full width */
+  header > div .ring-focus {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100%;
+  }
+}
+
+/* Tabs row scrollbar — hide visually but keep functional */
+.tabs-row::-webkit-scrollbar { display: none; }
+
+/* Sidebar as a drawer when mobile */
+.sidebar-drawer { transition: transform 220ms ease; }
+@media (max-width: 768px) {
+  .sidebar-drawer {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: 260px; z-index: 80;
+    box-shadow: 0 24px 48px -20px rgba(20, 28, 50, 0.4);
+    transform: translateX(-100%);
+  }
+  .sidebar-drawer.is-open { transform: translateX(0); }
+}
+.sidebar-overlay { display: none; }
+@media (max-width: 768px) {
+  .sidebar-overlay.is-open {
+    display: block;
+    position: fixed; inset: 0; z-index: 75;
+    background: oklch(0.10 0.04 250 / 0.45);
+  }
+}

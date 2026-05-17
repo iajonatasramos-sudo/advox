@@ -1,0 +1,16 @@
+node_modules
+dist
+.git
+.gitignore
+.env
+.env.local
+.env.*.local
+.DS_Store
+.vscode
+.idea
+*.log
+README.md
+DEPLOY.md
+ROADMAP.md
+supabase/
+.claude/
