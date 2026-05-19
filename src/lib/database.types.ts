@@ -27,6 +27,8 @@ export type Database = {
           cnpj: string | null;
           status: ContaStatus;
           coord_id: string | null;
+          logo_url: string | null;
+          cor_primaria: string | null;
           created_at: string;
           updated_at: string;
         };

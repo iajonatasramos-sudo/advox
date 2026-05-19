@@ -318,9 +318,6 @@ export function DesbloquearTopbar({ onOpen }: { onOpen: () => void }) {
       }}>
         <Ic.Unlock size={14} /> Desbloquear Cliente
       </button>
-      <div className="desbloq-fineprint" style={{ marginLeft: "auto", fontSize: 11.5, color: "oklch(0.78 0.03 250)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-        Honorários pagos pelo cliente final · Você usa o sistema 100% grátis
-      </div>
     </div>
   );
 }

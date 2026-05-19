@@ -14,7 +14,7 @@ import {
   USERS, PIPELINE_COMERCIAL, PIPELINE_JURIDICO,
   type Persona, type Representante, type User as MockUser,
 } from "./data";
-import { useLiveNotificacoes, type UiLead as Lead, type UiCaso as Caso } from "./lib/data-live";
+import { useLiveNotificacoes, useRevendaInfo, useApplyRevendaTheme, type UiLead as Lead, type UiCaso as Caso } from "./lib/data-live";
 import { useAuth, AuthGate, PendingApproval, AuthLoading, ProfileErrorScreen, type Profile } from "./auth";
 
 const PAPEL_TO_PERSONA: Record<Profile["papel"], Persona> = {
@@ -66,13 +66,16 @@ const NAV: Record<Persona, NavItem[]> = {
 export function App() {
   const { loading, session, profile, profileError } = useAuth();
 
+  // Render otimista: se já temos profile ativo do cache, mostra a app
+  // imediato. onAuthStateChange confirma a session em background — se
+  // a session for inválida, o provider derruba pro AuthGate.
+  if (profile && profile.status === "ativo") return <AppInner profile={profile} />;
+
   if (loading) return <AuthLoading />;
   if (!session) return <AuthGate />;
   if (profileError) return <ProfileErrorScreen />;
   if (!profile) return <AuthLoading />;
-  if (profile.status !== "ativo") return <PendingApproval />;
-
-  return <AppInner profile={profile} />;
+  return <PendingApproval />;
 }
 
 function AppInner({ profile }: { profile: Profile }) {
@@ -85,6 +88,10 @@ function AppInner({ profile }: { profile: Profile }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [coordFocusRep, setCoordFocusRep] = useState<string | undefined>(undefined);
   const isMobile = useIsMobile();
+
+  // Branding por revenda (logo + cor primária)
+  const { info: revendaInfo } = useRevendaInfo(profile.revenda_id);
+  useApplyRevendaTheme(revendaInfo?.cor_primaria ?? null);
 
   // user: derived from real profile, falling back to mock fields for screens
   // that still reference mock-only fields (revenda label, etc.)
@@ -148,6 +155,7 @@ function AppInner({ profile }: { profile: Profile }) {
       <Topbar
         user={user}
         persona={persona}
+        revendaInfo={revendaInfo}
         onOpenNotif={() => setShowNotif(true)}
         onOpenPerfil={() => setRoute("perfil")}
         onToggleDrawer={() => setDrawerOpen(o => !o)}
@@ -185,6 +193,7 @@ function AppInner({ profile }: { profile: Profile }) {
 type TopbarProps = {
   user: MockUser;
   persona: Persona;
+  revendaInfo: { nome: string; logo_url: string | null } | null;
   onOpenNotif: () => void;
   onOpenPerfil: () => void;
   onToggleDrawer: () => void;
@@ -198,7 +207,7 @@ const PERSONA_BADGE: Record<Persona, { label: string; icon: React.ReactNode }> =
   admin: { label: "Administrador",            icon: <Ic.Settings size={12} /> },
 };
 
-function Topbar({ user, persona, onOpenNotif, onOpenPerfil, onToggleDrawer, isMobile }: TopbarProps) {
+function Topbar({ user, persona, revendaInfo, onOpenNotif, onOpenPerfil, onToggleDrawer, isMobile }: TopbarProps) {
   const { signOut, profile } = useAuth();
   const personaInfo = PERSONA_BADGE[persona];
   const { items: notifs } = useLiveNotificacoes(profile?.id);
@@ -234,6 +243,24 @@ function Topbar({ user, persona, onOpenNotif, onOpenPerfil, onToggleDrawer, isMo
       <div className="topbar-search" style={{ marginLeft: 12, flex: 1, maxWidth: 460 }}>
         <Input full icon={<Ic.Search size={13} />} placeholder="Buscar leads, casos, clientes, documentos…" value="" onChange={()=>{}} />
       </div>
+
+      {revendaInfo && (
+        <div className="only-desktop" style={{
+          display: "inline-flex", alignItems: "center", gap: 8,
+          padding: "4px 12px",
+          background: "var(--surface-3)", border: "1px solid var(--line)",
+          borderRadius: 6, minHeight: 32,
+          flexShrink: 0,
+        }} title={revendaInfo.nome}>
+          {revendaInfo.logo_url ? (
+            <img src={revendaInfo.logo_url} alt={revendaInfo.nome} style={{ height: 22, width: "auto", maxWidth: 110, objectFit: "contain" }} />
+          ) : (
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {revendaInfo.nome}
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="topbar-actions" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
         <div className="only-desktop" style={{

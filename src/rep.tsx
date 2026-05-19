@@ -720,7 +720,7 @@ export const TarefaRow = TarefaRowLive;
 /* === Tarefas screen === */
 export function RepTarefas() {
   const { profile } = useAuth();
-  const { tarefas } = useLiveTarefas({ autorId: profile?.id });
+  const { tarefas, error } = useLiveTarefas({ autorId: profile?.id });
   const [showNova, setShowNova] = useState(false);
   const groups = [
     { id: "atrasada", label: "Atrasadas", color: "var(--rose)" },
@@ -743,6 +743,11 @@ export function RepTarefas() {
         </div>
       </header>
 
+      {error && (
+        <div style={{ background: "var(--rose-soft)", border: "1px solid var(--rose-border)", color: "var(--rose)", padding: "10px 14px", borderRadius: 5, fontSize: 12.5 }}>
+          Erro ao carregar tarefas: {error}
+        </div>
+      )}
       {tarefas === null ? (
         <div style={{ padding: 40, textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>Carregando tarefas…</div>
       ) : (tarefas ?? []).length === 0 ? (

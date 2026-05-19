@@ -33,16 +33,93 @@ export type UiTarefa = DbTarefa & {
  * Helpers genéricos
  * ================================================================== */
 
+// Garante channel name único por mount: evita que StrictMode (dev) ou
+// re-montagem rápida reaproveite um channel já `subscribed`, o que faz
+// o supabase-js explodir com "cannot add postgres_changes after subscribe()".
+let channelCounter = 0;
+
 function useChannel(name: string, table: string, onChange: () => void) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   useEffect(() => {
+    const uniqueName = `${name}-${++channelCounter}`;
     const ch = supabase
-      .channel(name)
+      .channel(uniqueName)
       .on("postgres_changes", { event: "*", schema: "public", table }, () => onChangeRef.current())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [name, table]);
+}
+
+// Cache module-level (stale-while-revalidate). Mantém o último resultado
+// de cada query por chave, pra a próxima montagem renderizar imediato
+// com o dado em cache enquanto refetcha em background. Elimina o
+// "Carregando…" entre navegações.
+const liveCache = new Map<string, unknown>();
+export function readLiveCache<T>(key: string): T | null {
+  return (liveCache.get(key) as T | undefined) ?? null;
+}
+export function writeLiveCache<T>(key: string, value: T) {
+  liveCache.set(key, value);
+}
+export function clearLiveCache() {
+  liveCache.clear();
+}
+
+/* ====================================================================
+ * REVENDA INFO (branding)
+ * ================================================================== */
+
+export type RevendaInfo = {
+  id: string;
+  nome: string;
+  logo_url: string | null;
+  cor_primaria: string | null;
+};
+
+const revendaInfoCacheKey = (id: string) => `revenda-info:${id}`;
+
+export function useRevendaInfo(revendaId: string | null | undefined) {
+  const [info, setInfo] = useState<RevendaInfo | null>(() =>
+    revendaId ? readLiveCache<RevendaInfo>(revendaInfoCacheKey(revendaId)) : null
+  );
+
+  const load = useCallback(async () => {
+    if (!revendaId) { setInfo(null); return; }
+    const { data, error } = await supabase
+      .from("revendas")
+      .select("id, nome, logo_url, cor_primaria")
+      .eq("id", revendaId)
+      .maybeSingle();
+    if (error) {
+      console.error("[Advox] useRevendaInfo error:", error);
+      return;
+    }
+    const next = (data as RevendaInfo | null) ?? null;
+    if (next) writeLiveCache(revendaInfoCacheKey(revendaId), next);
+    setInfo(next);
+  }, [revendaId]);
+
+  useEffect(() => { load(); }, [load]);
+  useChannel(`revenda-info-${revendaId ?? "none"}`, "revendas", load);
+
+  return { info, refresh: load };
+}
+
+// Aplica a cor primária da revenda como CSS variable global. Usar dentro
+// de um componente que sempre está montado (ex: <App />), pra que o tema
+// fique consistente.
+export function useApplyRevendaTheme(corPrimaria: string | null | undefined) {
+  useEffect(() => {
+    if (!corPrimaria) {
+      // Restaura defaults
+      document.documentElement.style.removeProperty("--navy");
+      document.documentElement.style.removeProperty("--navy-2");
+      return;
+    }
+    document.documentElement.style.setProperty("--navy", corPrimaria);
+    document.documentElement.style.setProperty("--navy-2", corPrimaria);
+  }, [corPrimaria]);
 }
 
 /* ====================================================================
@@ -59,7 +136,8 @@ export type LeadFilter = {
 };
 
 export function useLiveLeads(filter?: LeadFilter) {
-  const [leads, setLeads] = useState<UiLead[] | null>(null);
+  const cacheKey = `leads:${filter?.repId ?? "all"}:${filter?.revendaId ?? "all"}:${JSON.stringify(filter?.status ?? null)}`;
+  const [leads, setLeads] = useState<UiLead[] | null>(() => readLiveCache<UiLead[]>(cacheKey));
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -70,10 +148,17 @@ export function useLiveLeads(filter?: LeadFilter) {
       q = Array.isArray(filter.status) ? q.in("status", filter.status) : q.eq("status", filter.status);
     }
     const { data, error } = await q;
-    if (error) { setError(error.message); return; }
+    if (error) {
+      console.error("[Advox] useLiveLeads error:", error);
+      setError(error.message);
+      setLeads(prev => prev ?? []);
+      return;
+    }
     setError(null);
-    setLeads((data ?? []) as unknown as UiLead[]);
-  }, [filter?.repId, filter?.revendaId, JSON.stringify(filter?.status)]);
+    const next = (data ?? []) as unknown as UiLead[];
+    writeLiveCache(cacheKey, next);
+    setLeads(next);
+  }, [filter?.repId, filter?.revendaId, JSON.stringify(filter?.status), cacheKey]);
 
   useEffect(() => { load(); }, [load]);
   useChannel(`leads-live-${filter?.repId ?? "all"}-${filter?.revendaId ?? "all"}`, "leads", load);
@@ -101,7 +186,7 @@ export async function deleteLead(id: string) {
  * ================================================================== */
 
 const CASO_SELECT =
-  "*, lead:leads(id, empresa, contato, cidade, uf, operadora, valor, rep_id, revenda_id), advogado:profiles!casos_advogado_id_fkey(id, nome, email, oab)";
+  "*, lead:leads!casos_lead_id_fkey(id, empresa, contato, cidade, uf, operadora, valor, rep_id, revenda_id), advogado:profiles!casos_advogado_id_fkey(id, nome, email, oab)";
 
 export type CasoFilter = {
   advogadoId?: string;
@@ -111,7 +196,8 @@ export type CasoFilter = {
 };
 
 export function useLiveCasos(filter?: CasoFilter) {
-  const [casos, setCasos] = useState<UiCaso[] | null>(null);
+  const cacheKey = `casos:${filter?.advogadoId ?? "all"}:${filter?.repId ?? "all"}:${filter?.revendaId ?? "all"}:${JSON.stringify(filter?.status ?? null)}`;
+  const [casos, setCasos] = useState<UiCaso[] | null>(() => readLiveCache<UiCaso[]>(cacheKey));
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -121,14 +207,20 @@ export function useLiveCasos(filter?: CasoFilter) {
       q = Array.isArray(filter.status) ? q.in("status", filter.status) : q.eq("status", filter.status);
     }
     const { data, error } = await q;
-    if (error) { setError(error.message); return; }
+    if (error) {
+      console.error("[Advox] useLiveCasos error:", error);
+      setError(error.message);
+      setCasos(prev => prev ?? []);
+      return;
+    }
     setError(null);
     let result = (data ?? []) as unknown as UiCaso[];
     // Filtragem por repId/revendaId (via lead) é feita client-side
     if (filter?.repId) result = result.filter(c => c.lead?.rep_id === filter.repId);
     if (filter?.revendaId) result = result.filter(c => c.lead?.revenda_id === filter.revendaId);
+    writeLiveCache(cacheKey, result);
     setCasos(result);
-  }, [filter?.advogadoId, filter?.repId, filter?.revendaId, JSON.stringify(filter?.status)]);
+  }, [filter?.advogadoId, filter?.repId, filter?.revendaId, JSON.stringify(filter?.status), cacheKey]);
 
   useEffect(() => { load(); }, [load]);
   useChannel(`casos-live-${filter?.advogadoId ?? "all"}`, "casos", load);
@@ -160,7 +252,8 @@ export type TarefaFilter = {
 };
 
 export function useLiveTarefas(filter?: TarefaFilter) {
-  const [tarefas, setTarefas] = useState<UiTarefa[] | null>(null);
+  const cacheKey = `tarefas:${filter?.autorId ?? "all"}:${filter?.leadId ?? "all"}:${filter?.revendaId ?? "all"}`;
+  const [tarefas, setTarefas] = useState<UiTarefa[] | null>(() => readLiveCache<UiTarefa[]>(cacheKey));
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -168,7 +261,12 @@ export function useLiveTarefas(filter?: TarefaFilter) {
     if (filter?.autorId) q = q.eq("autor_id", filter.autorId);
     if (filter?.leadId) q = q.eq("lead_id", filter.leadId);
     const { data, error } = await q;
-    if (error) { setError(error.message); return; }
+    if (error) {
+      console.error("[Advox] useLiveTarefas error:", error);
+      setError(error.message);
+      setTarefas(prev => prev ?? []);
+      return;
+    }
     setError(null);
     let result = (data ?? []) as unknown as UiTarefa[];
     if (filter?.revendaId) {
@@ -185,8 +283,9 @@ export function useLiveTarefas(filter?: TarefaFilter) {
         result = result.filter(t => !t.lead_id || allowed.has(t.lead_id));
       }
     }
+    writeLiveCache(cacheKey, result);
     setTarefas(result);
-  }, [filter?.autorId, filter?.leadId, filter?.revendaId]);
+  }, [filter?.autorId, filter?.leadId, filter?.revendaId, cacheKey]);
 
   useEffect(() => { load(); }, [load]);
   useChannel(`tarefas-live-${filter?.autorId ?? "all"}-${filter?.leadId ?? "all"}`, "tarefas", load);
@@ -217,7 +316,8 @@ export type UiAuditoria = Database["public"]["Tables"]["auditoria"]["Row"] & {
 };
 
 export function useLiveAuditoria(limit = 200) {
-  const [items, setItems] = useState<UiAuditoria[] | null>(null);
+  const cacheKey = `auditoria:${limit}`;
+  const [items, setItems] = useState<UiAuditoria[] | null>(() => readLiveCache<UiAuditoria[]>(cacheKey));
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -226,10 +326,17 @@ export function useLiveAuditoria(limit = 200) {
       .select("*, actor:profiles!auditoria_actor_id_fkey(id, nome, email, papel)")
       .order("created_at", { ascending: false })
       .limit(limit);
-    if (error) { setError(error.message); return; }
+    if (error) {
+      console.error("[Advox] useLiveAuditoria error:", error);
+      setError(error.message);
+      setItems(prev => prev ?? []);
+      return;
+    }
     setError(null);
-    setItems((data ?? []) as unknown as UiAuditoria[]);
-  }, [limit]);
+    const next = (data ?? []) as unknown as UiAuditoria[];
+    writeLiveCache(cacheKey, next);
+    setItems(next);
+  }, [limit, cacheKey]);
 
   useEffect(() => { load(); }, [load]);
   useChannel(`auditoria-live-${limit}`, "auditoria", load);
@@ -305,7 +412,8 @@ export async function aceitarConvite(token: string, userId: string): Promise<{ o
 }
 
 export function useLiveConvites(filter?: { revendaId?: string }) {
-  const [items, setItems] = useState<ConviteRow[] | null>(null);
+  const cacheKey = `convites:${filter?.revendaId ?? "all"}`;
+  const [items, setItems] = useState<ConviteRow[] | null>(() => readLiveCache<ConviteRow[]>(cacheKey));
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -315,10 +423,17 @@ export function useLiveConvites(filter?: { revendaId?: string }) {
       .order("created_at", { ascending: false });
     if (filter?.revendaId) q = q.eq("revenda_id", filter.revendaId);
     const { data, error } = await q;
-    if (error) { setError(error.message); return; }
+    if (error) {
+      console.error("[Advox] useLiveConvites error:", error);
+      setError(error.message);
+      setItems(prev => prev ?? []);
+      return;
+    }
     setError(null);
-    setItems((data ?? []) as unknown as ConviteRow[]);
-  }, [filter?.revendaId]);
+    const next = (data ?? []) as unknown as ConviteRow[];
+    writeLiveCache(cacheKey, next);
+    setItems(next);
+  }, [filter?.revendaId, cacheKey]);
 
   useEffect(() => { load(); }, [load]);
   useChannel(`convites-${filter?.revendaId ?? "all"}`, "convites", load);
@@ -350,7 +465,8 @@ export type Notificacao = {
 };
 
 export function useLiveNotificacoes(userId: string | null | undefined) {
-  const [items, setItems] = useState<Notificacao[] | null>(null);
+  const cacheKey = `notificacoes:${userId ?? "none"}`;
+  const [items, setItems] = useState<Notificacao[] | null>(() => readLiveCache<Notificacao[]>(cacheKey));
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -361,10 +477,17 @@ export function useLiveNotificacoes(userId: string | null | undefined) {
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(50);
-    if (error) { setError(error.message); return; }
+    if (error) {
+      console.error("[Advox] useLiveNotificacoes error:", error);
+      setError(error.message);
+      setItems(prev => prev ?? []);
+      return;
+    }
     setError(null);
-    setItems((data ?? []) as unknown as Notificacao[]);
-  }, [userId]);
+    const next = (data ?? []) as unknown as Notificacao[];
+    writeLiveCache(cacheKey, next);
+    setItems(next);
+  }, [userId, cacheKey]);
 
   useEffect(() => { load(); }, [load]);
   useChannel(`notificacoes-${userId ?? "none"}`, "notificacoes", load);

@@ -9,9 +9,11 @@ import { supabase } from "./lib/supabase";
 import type { ContaStatus } from "./lib/database.types";
 import {
   useLiveLeads, useLiveCasos, useLiveTarefas, fmtBRL, PIPELINE_JURIDICO_DB,
+  readLiveCache, writeLiveCache, useRevendaInfo,
   type UiLead,
 } from "./lib/data-live";
 import { ConvidarModal } from "./invite-modal";
+import { BrandingModal } from "./branding-modal";
 
 /* === Tipo do rep no time (do Supabase) === */
 type TeamRepRow = {
@@ -54,15 +56,20 @@ export function CoordDashboard({ onOpenLead }: { onOpenLead: (l: UiLead) => void
   const { casos } = useLiveCasos({ revendaId });
   const { tarefas } = useLiveTarefas({ revendaId });
 
-  const [team, setTeam] = useState<TeamRepRow[] | null>(null);
+  const teamCacheKey = `coord-team:${revendaId ?? "none"}`;
+  const [team, setTeam] = useState<TeamRepRow[] | null>(() => readLiveCache<TeamRepRow[]>(teamCacheKey));
   useEffect(() => {
     if (!revendaId) { setTeam([]); return; }
     supabase.from("profiles")
       .select("id, nome, email, status, cidade, uf, whats, created_at")
       .eq("papel", "rep")
       .eq("revenda_id", revendaId)
-      .then(({ data }) => setTeam((data ?? []) as unknown as TeamRepRow[]));
-  }, [revendaId, leads?.length]);
+      .then(({ data }) => {
+        const next = (data ?? []) as unknown as TeamRepRow[];
+        writeLiveCache(teamCacheKey, next);
+        setTeam(next);
+      });
+  }, [revendaId, leads?.length, teamCacheKey]);
 
   const tarefasAtrasadas = (tarefas ?? []).filter(t => t.urgencia === "atrasada" && !t.completed);
   const ativos = (leads ?? []).filter(l => !["fechado","perdido"].includes(l.status)).length;
@@ -83,10 +90,13 @@ export function CoordDashboard({ onOpenLead }: { onOpenLead: (l: UiLead) => void
     })
     .sort((a, b) => b.valor - a.valor);
 
+  const { info: revendaInfo } = useRevendaInfo(revendaId);
+  const [showBranding, setShowBranding] = useState(false);
+
   return (
     <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14, gap: 12 }}>
           <div>
             <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>
               Bom dia{profile?.nome ? `, ${profile.nome.split(" ")[0]}` : ""}.
@@ -96,6 +106,11 @@ export function CoordDashboard({ onOpenLead }: { onOpenLead: (l: UiLead) => void
               {tarefasAtrasadas.length > 0 && <> · <strong style={{ color: "var(--rose)" }}>{tarefasAtrasadas.length} tarefas atrasadas</strong></>}
             </div>
           </div>
+          {revendaInfo && (
+            <Btn variant="default" size="sm" icon={<Ic.Settings size={13} />} onClick={() => setShowBranding(true)}>
+              Branding da revenda
+            </Btn>
+          )}
         </div>
         <div className="grid-kpi" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
           <KPI label="Leads ativos do time" valor={String(ativos)} delta={`${leads?.length ?? 0} no total`} trend="neutral" icon={<Ic.Briefcase size={14} />} />
@@ -162,6 +177,16 @@ export function CoordDashboard({ onOpenLead }: { onOpenLead: (l: UiLead) => void
       <Section title="Leads recentes do time" noPad>
         <RepLista filter="" onOpenLead={onOpenLead} leads={(leads ?? []).slice(0, 6)} />
       </Section>
+
+      {showBranding && revendaInfo && (
+        <BrandingModal
+          revendaId={revendaInfo.id}
+          revendaNome={revendaInfo.nome}
+          logoUrl={revendaInfo.logo_url}
+          corPrimaria={revendaInfo.cor_primaria}
+          onClose={() => setShowBranding(false)}
+        />
+      )}
     </div>
   );
 }
@@ -171,7 +196,8 @@ export function CoordTime({ onOpenRep }: { onOpenRep: (r: { nome: string }) => v
   const { profile } = useAuth();
   const revendaId = profile?.revenda_id ?? null;
   const revendaNome = useRevendaNome(revendaId);
-  const [team, setTeam] = useState<TeamRepRow[] | null>(null);
+  const teamCacheKey = `coord-time:${revendaId ?? "none"}`;
+  const [team, setTeam] = useState<TeamRepRow[] | null>(() => readLiveCache<TeamRepRow[]>(teamCacheKey));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [showInvite, setShowInvite] = useState(false);
@@ -186,7 +212,9 @@ export function CoordTime({ onOpenRep }: { onOpenRep: (r: { nome: string }) => v
       .eq("revenda_id", revendaId)
       .order("created_at", { ascending: false });
     if (error) { setError(error.message); return; }
-    setTeam((data ?? []) as unknown as TeamRepRow[]);
+    const next = (data ?? []) as unknown as TeamRepRow[];
+    writeLiveCache(teamCacheKey, next);
+    setTeam(next);
   };
 
   useEffect(() => { load(); }, [revendaId]);

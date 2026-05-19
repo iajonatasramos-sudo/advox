@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Ic } from "./icons";
 import {
   Btn, Badge, StatusPill, Avatar, KPI, Input, OperadoraTag, Section, MiniBars, BrazilHeatmap, Empty,
@@ -13,8 +13,32 @@ import {
 import { useStore } from "./store";
 import { supabase } from "./lib/supabase";
 import type { ContaStatus } from "./lib/database.types";
-import { useLiveLeads, useLiveCasos, useLiveAuditoria, type UiLead, type UiCaso } from "./lib/data-live";
+import { useLiveLeads, useLiveCasos, useLiveAuditoria, readLiveCache, writeLiveCache, type UiLead, type UiCaso } from "./lib/data-live";
 import { ConvidarModal } from "./invite-modal";
+import { BrandingModal } from "./branding-modal";
+
+/* ===== Helpers de agregação para o Dashboard ===== */
+function startOfPeriodo(p: string): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  if (p === "hoje") return d;
+  if (p === "semana") { d.setDate(d.getDate() - 6); return d; }
+  if (p === "mes") { d.setDate(1); return d; }
+  return new Date(0);
+}
+
+function fmtDuracao(dias: number): string {
+  if (!isFinite(dias) || dias <= 0) return "—";
+  if (dias < 1) return "<1d";
+  return `${Math.round(dias)}d`;
+}
+
+function startOfWeek(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
 
 type RepRow = {
   id: string;
@@ -45,8 +69,80 @@ const FMT_DATE = (iso: string) => {
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 };
 
+type PendingProfile = {
+  id: string;
+  nome: string;
+  email: string;
+  papel: string;
+  uf: string | null;
+  cidade: string | null;
+  created_at: string;
+  revenda: { nome: string } | null;
+};
+
 export function AdminDashboard() {
   const [periodo, setPeriodo] = useState("mes");
+  const { leads } = useLiveLeads();
+  const { casos } = useLiveCasos();
+  const { items: auditoria } = useLiveAuditoria(10);
+  const PENDING_CACHE = "admin-pendentes-list";
+  const [pendentes, setPendentes] = useState<PendingProfile[] | null>(() => readLiveCache<PendingProfile[]>(PENDING_CACHE));
+  const [busyApprove, setBusyApprove] = useState<string | null>(null);
+
+  const carregarPendentes = async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, nome, email, papel, uf, cidade, created_at, revenda:revendas!profiles_revenda_id_fkey(nome)")
+      .eq("status", "pendente")
+      .order("created_at", { ascending: false });
+    const next = (data ?? []) as unknown as PendingProfile[];
+    writeLiveCache(PENDING_CACHE, next);
+    setPendentes(next);
+  };
+
+  useEffect(() => { carregarPendentes(); }, []);
+
+  const aprovar = async (id: string) => {
+    setBusyApprove(id);
+    await supabase.from("profiles").update({ status: "ativo" } as never).eq("id", id);
+    await carregarPendentes();
+    setBusyApprove(null);
+  };
+  const recusar = async (id: string) => {
+    setBusyApprove(id);
+    await supabase.from("profiles").update({ status: "recusado" } as never).eq("id", id);
+    await carregarPendentes();
+    setBusyApprove(null);
+  };
+
+  const since = useMemo(() => startOfPeriodo(periodo), [periodo]);
+
+  const stats = useMemo(() => {
+    const ls = leads ?? [];
+    const cs = casos ?? [];
+    const casosPeriodo = cs.filter(c => new Date(c.created_at) >= since);
+    const liberados = cs.filter(c => c.status === "liberado" && new Date(c.created_at) >= since);
+    const tempoMedio = (() => {
+      const durs = liberados
+        .map(c => (new Date(c.updated_at).getTime() - new Date(c.created_at).getTime()) / (1000 * 60 * 60 * 24))
+        .filter(d => d > 0);
+      if (durs.length === 0) return 0;
+      return durs.reduce((a, b) => a + b, 0) / durs.length;
+    })();
+    const valorEstimado = casosPeriodo.reduce((sum, c) => sum + (c.lead?.valor ?? 0), 0);
+    return {
+      leads: ls.length,
+      leadsPeriodo: ls.filter(l => new Date(l.created_at) >= since).length,
+      casosTotal: cs.length,
+      casosPeriodo: casosPeriodo.length,
+      liberados: liberados.length,
+      tempoMedio,
+      valorEstimado,
+    };
+  }, [leads, casos, since]);
+
+  const carregando = leads === null || casos === null;
+
   return (
     <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
       <header style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
@@ -55,7 +151,7 @@ export function AdminDashboard() {
           <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>Panorama operacional do escritório e da rede de representantes</div>
         </div>
         <div style={{ display: "inline-flex", background: "var(--surface-3)", border: "1px solid var(--line)", borderRadius: 5, padding: 2 }}>
-          {[["hoje","Hoje"],["semana","Semana"],["mes","Mês"],["custom","Personalizado"]].map(([id, l]) => (
+          {[["hoje","Hoje"],["semana","Semana"],["mes","Mês"]].map(([id, l]) => (
             <button key={id} onClick={() => setPeriodo(id)} style={{
               padding: "5px 11px", fontSize: 12, fontWeight: 500, border: 0,
               background: periodo === id ? "var(--surface)" : "transparent",
@@ -68,108 +164,111 @@ export function AdminDashboard() {
       </header>
 
       <div className="grid-kpi" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-        {KPIS_ADMIN.map(k => <KPI key={k.label} {...k}
-          icon={k.label.includes("recebidos") ? <Ic.Briefcase size={14} /> :
-                k.label.includes("liberados") ? <Ic.CheckCircle size={14} /> :
-                k.label.includes("Tempo") ? <Ic.Clock size={14} /> :
-                <Ic.Money size={14} />} />)}
+        <KPI label="Leads no período"  valor={carregando ? "…" : String(stats.leadsPeriodo)}   icon={<Ic.Briefcase size={14} />} />
+        <KPI label="Casos recebidos"   valor={carregando ? "…" : String(stats.casosPeriodo)}   icon={<Ic.Scale size={14} />} />
+        <KPI label="Casos liberados"   valor={carregando ? "…" : String(stats.liberados)}      icon={<Ic.CheckCircle size={14} />} />
+        <KPI label="Valor estimado"    valor={carregando ? "…" : fmtBRL(stats.valorEstimado)}  icon={<Ic.Money size={14} />} />
       </div>
 
       <div className="grid-2col" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 14 }}>
-        <Section title="Funil — Pipeline Jurídico" subtitle="Maio/2026" right={<Btn variant="ghost" size="sm" icon={<Ic.Download size={12} />}>CSV</Btn>}>
-          <Funil />
+        <Section title="Funil — Pipeline Jurídico" subtitle={periodo === "hoje" ? "Hoje" : periodo === "semana" ? "Últimos 7 dias" : "Mês corrente"}>
+          <FunilReal casos={(casos ?? []).filter(c => new Date(c.created_at) >= since)} />
         </Section>
-        <Section title="Evolução temporal" subtitle="casos / dia" right={<Btn variant="ghost" size="sm">Semana</Btn>}>
-          <Evolucao />
-        </Section>
-      </div>
-
-      <div className="grid-3col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
-        <Section title="Top representantes" subtitle="indicações no mês">
-          <RankList items={TOP_REPS.map(r => ({
-            avatar: r.nome, titulo: r.nome, sub: r.revenda, valor: r.ind, suffix: `ind. · ${r.conv}% conv. · ${fmtBRL(r.valor)}`,
-          }))} />
-        </Section>
-        <Section title="Top advogados" subtitle="casos resolvidos no mês">
-          <RankList items={TOP_ADV.map(a => ({
-            avatar: a.nome, titulo: a.nome, sub: `tempo médio ${a.tempo}d`, valor: a.resolvidos, suffix: "casos",
-          }))} />
-        </Section>
-        <Section title="Casos por estado" subtitle="volume mensal">
-          <BrazilHeatmap data={HEATMAP} />
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 14, fontSize: 11, color: "var(--ink-3)" }}>
-            <span>Menos</span>
-            {[0,0.25,0.5,0.75,1].map(i => (
-              <span key={i} style={{ width: 16, height: 12, borderRadius: 2, border: "1px solid var(--line)", background: i === 0 ? "var(--surface-3)" : `oklch(${0.95 - i * 0.55} ${0.04 + i * 0.08} 255)` }} />
-            ))}
-            <span>Mais</span>
+        <Section title="Casos por semana" subtitle="últimas 12 semanas">
+          <EvolucaoReal casos={casos ?? []} />
+          <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-4)" }}>
+            Tempo médio até liberação: <strong style={{ color: "var(--ink-2)" }}>{fmtDuracao(stats.tempoMedio)}</strong>
           </div>
         </Section>
       </div>
 
-      <div className="grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-        <Section title="Cadastros pendentes" subtitle="2 aguardando aprovação" right={<Btn variant="ghost" size="sm">Ver todos</Btn>} noPad>
-          {REPRESENTANTES.filter(r => r.status === "Pendente").map(r => (
-            <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: "1px solid var(--line)" }}>
-              <Avatar name={r.nome} size={32} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 12.5, fontWeight: 500 }}>{r.nome}</div>
-                <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>{r.revenda || "Sem revenda"} · {r.cidade}/{r.uf} · {r.operadoras.join(", ")}</div>
-              </div>
-              <span style={{ fontSize: 11, color: "var(--ink-4)" }}>solicitado {r.desde}</span>
-              <Btn variant="default" size="sm" icon={<Ic.Eye size={12} />}>Ver</Btn>
-              <Btn variant="primary" size="sm" icon={<Ic.Check size={12} />}>Aprovar</Btn>
-              <Btn variant="danger" size="sm" icon={<Ic.X size={12} />}>Recusar</Btn>
-            </div>
-          ))}
+      <div className="grid-3col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+        <Section title="Top representantes" subtitle="indicações no período">
+          <TopRepsReal leads={(leads ?? []).filter(l => new Date(l.created_at) >= since)} />
         </Section>
-        <Section title="Auditoria recente" subtitle="últimas ações no sistema" right={<Btn variant="ghost" size="sm">Abrir auditoria</Btn>} noPad>
-          {AUDITORIA.slice(0, 5).map((a, i) => (
-            <div key={a.id} style={{ display: "flex", gap: 10, padding: "10px 14px", borderBottom: i < 4 ? "1px solid var(--line)" : 0, fontSize: 12 }}>
-              <Avatar name={a.quem} size={24} />
-              <div style={{ flex: 1 }}>
-                <div><strong>{a.quem}</strong> <span style={{ color: "var(--ink-2)" }}>{a.acao}</span></div>
-                <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>{a.alvo}</div>
+        <Section title="Top advogados" subtitle="casos liberados no período">
+          <TopAdvsReal casos={(casos ?? []).filter(c => c.status === "liberado" && new Date(c.created_at) >= since)} />
+        </Section>
+        <Section title="Casos por estado" subtitle="distribuição UF">
+          <HeatmapReal casos={(casos ?? []).filter(c => new Date(c.created_at) >= since)} />
+        </Section>
+      </div>
+
+      <div className="grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <Section title="Cadastros pendentes" subtitle={`${(pendentes ?? []).length} aguardando aprovação`} noPad>
+          {pendentes === null ? (
+            <div style={{ padding: 16, fontSize: 12.5, color: "var(--ink-3)" }}>Carregando…</div>
+          ) : pendentes.length === 0 ? (
+            <Empty icon={<Ic.Check size={18} />} title="Nenhum cadastro pendente" hint="Tudo em dia." />
+          ) : (
+            pendentes.map(p => (
+              <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: "1px solid var(--line)" }}>
+                <Avatar name={p.nome} size={32} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 500 }}>{p.nome} <span style={{ color: "var(--ink-4)", fontWeight: 400 }}>· {p.papel}</span></div>
+                  <div style={{ fontSize: 11.5, color: "var(--ink-3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {p.revenda?.nome || "Sem revenda"}{p.uf ? ` · ${p.cidade ?? "—"}/${p.uf}` : ""} · {p.email}
+                  </div>
+                </div>
+                <span style={{ fontSize: 11, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{FMT_DATE(p.created_at)}</span>
+                <Btn variant="primary" size="sm" icon={<Ic.Check size={12} />} disabled={busyApprove === p.id} onClick={() => aprovar(p.id)}>Aprovar</Btn>
+                <Btn variant="danger" size="sm" icon={<Ic.X size={12} />} disabled={busyApprove === p.id} onClick={() => recusar(p.id)}>Recusar</Btn>
               </div>
-              <span style={{ fontSize: 11, color: "var(--ink-4)" }}>{a.quando}</span>
-            </div>
-          ))}
+            ))
+          )}
+        </Section>
+        <Section title="Auditoria recente" subtitle="últimas ações no sistema" noPad>
+          {auditoria === null ? (
+            <div style={{ padding: 16, fontSize: 12.5, color: "var(--ink-3)" }}>Carregando…</div>
+          ) : auditoria.length === 0 ? (
+            <Empty icon={<Ic.Audit size={18} />} title="Sem registros ainda" hint="Ações no sistema vão aparecer aqui." />
+          ) : (
+            auditoria.slice(0, 6).map((a, i) => (
+              <div key={a.id} style={{ display: "flex", gap: 10, padding: "10px 14px", borderBottom: i < auditoria.length - 1 ? "1px solid var(--line)" : 0, fontSize: 12 }}>
+                <Avatar name={a.actor?.nome || "Sistema"} size={24} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <strong>{a.actor?.nome || "Sistema"}</strong>{" "}
+                    <span style={{ color: "var(--ink-2)" }}>{a.action}</span>{" "}
+                    <span style={{ color: "var(--ink-4)" }}>{a.entity_type}</span>
+                  </div>
+                </div>
+                <span style={{ fontSize: 11, color: "var(--ink-4)", whiteSpace: "nowrap" }}>{FMT_DATE(a.created_at)}</span>
+              </div>
+            ))
+          )}
         </Section>
       </div>
     </div>
   );
 }
 
-function Funil() {
-  const stages = [
-    { id: "recebido", label: "Recebido", v: 84 },
-    { id: "analise", label: "Em Análise", v: 76 },
-    { id: "contato", label: "Contato Inicial", v: 68 },
-    { id: "honorarios", label: "Proposta Honorários", v: 54 },
-    { id: "contratou", label: "Cliente Contratou", v: 48 },
-    { id: "documentacao", label: "Documentação", v: 47 },
-    { id: "extrajudicial", label: "Extrajudicial / Judicial", v: 47 },
-    { id: "liberado", label: "Liberado", v: 47 },
-  ];
-  const max = stages[0].v;
+function FunilReal({ casos }: { casos: UiCaso[] }) {
+  const stages = PIPELINE_JURIDICO.map(p => ({
+    id: p.id,
+    label: p.label,
+    color: p.color,
+    v: casos.filter(c => c.status === p.id).length,
+  }));
+  const max = Math.max(1, ...stages.map(s => s.v));
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       {stages.map((s, i) => {
         const pct = (s.v / max) * 100;
-        const conv = i === 0 ? 100 : Math.round((s.v / stages[i-1].v) * 100);
-        const c = PIPELINE_JURIDICO.find(p => p.id === s.id)!;
+        const prev = i === 0 ? null : stages[i - 1];
+        const conv = prev && prev.v > 0 ? Math.round((s.v / prev.v) * 100) : null;
         return (
           <div key={s.id} style={{ display: "grid", gridTemplateColumns: "180px 1fr 70px 60px", gap: 8, alignItems: "center", fontSize: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ width: 6, height: 6, borderRadius: 99, background: c.color }} />
+              <span style={{ width: 6, height: 6, borderRadius: 99, background: s.color }} />
               <span style={{ color: "var(--ink-2)" }}>{s.label}</span>
             </div>
             <div style={{ height: 22, background: "var(--surface-3)", borderRadius: 3, border: "1px solid var(--line)", overflow: "hidden", position: "relative" }}>
-              <div style={{ width: `${pct}%`, height: "100%", background: `linear-gradient(90deg, ${c.color}, ${c.color})`, opacity: 0.85 }} />
+              <div style={{ width: `${pct}%`, height: "100%", background: s.color, opacity: 0.85 }} />
             </div>
             <span className="mono" style={{ textAlign: "right", fontWeight: 500 }}>{s.v}</span>
-            <span style={{ fontSize: 11, color: i === 0 ? "var(--ink-4)" : (conv >= 80 ? "var(--green)" : "var(--ink-3)"), textAlign: "right" }} className="mono">
-              {i === 0 ? "—" : `${conv}%`}
+            <span style={{ fontSize: 11, color: i === 0 ? "var(--ink-4)" : (conv !== null && conv >= 80 ? "var(--green)" : "var(--ink-3)"), textAlign: "right" }} className="mono">
+              {i === 0 || conv === null ? "—" : `${conv}%`}
             </span>
           </div>
         );
@@ -178,18 +277,101 @@ function Funil() {
   );
 }
 
-function Evolucao() {
-  const data = [
-    { k: "S1", v: 12 }, { k: "S2", v: 16 }, { k: "S3", v: 21 }, { k: "S4", v: 18 }, { k: "S5", v: 23 }, { k: "S6", v: 27 }, { k: "S7", v: 24 },
-    { k: "S8", v: 30 }, { k: "S9", v: 28 }, { k: "S10", v: 32 }, { k: "S11", v: 35 }, { k: "S12", v: 31 },
-  ];
+function EvolucaoReal({ casos }: { casos: UiCaso[] }) {
+  const data = useMemo(() => {
+    const today = new Date();
+    const buckets: { k: string; v: number; date: Date }[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = startOfWeek(new Date(today));
+      d.setDate(d.getDate() - i * 7);
+      buckets.push({ k: `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}`, v: 0, date: d });
+    }
+    casos.forEach(c => {
+      const created = new Date(c.created_at);
+      for (let i = buckets.length - 1; i >= 0; i--) {
+        if (created >= buckets[i].date) {
+          buckets[i].v++;
+          break;
+        }
+      }
+    });
+    return buckets.map(b => ({ k: b.k, v: b.v }));
+  }, [casos]);
   return (
     <div>
       <MiniBars data={data} height={120} color="var(--navy)" />
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--ink-4)", marginTop: 4 }} className="mono">
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9.5, color: "var(--ink-4)", marginTop: 4 }} className="mono">
         {data.map(d => <span key={d.k} style={{ flex: 1, textAlign: "center" }}>{d.k}</span>)}
       </div>
     </div>
+  );
+}
+
+function TopRepsReal({ leads }: { leads: UiLead[] }) {
+  const items = useMemo(() => {
+    const map = new Map<string, { nome: string; revenda: string; ind: number; valor: number }>();
+    leads.forEach(l => {
+      const key = l.rep?.id || "—";
+      const cur = map.get(key) ?? { nome: l.rep?.nome || "Sem rep", revenda: l.revenda?.nome || "—", ind: 0, valor: 0 };
+      cur.ind++;
+      cur.valor += l.valor ?? 0;
+      map.set(key, cur);
+    });
+    return Array.from(map.values()).sort((a, b) => b.ind - a.ind).slice(0, 5);
+  }, [leads]);
+  if (items.length === 0) return <Empty icon={<Ic.Users size={18} />} title="Sem indicações no período" hint="Os top reps vão aparecer aqui." />;
+  return (
+    <RankList items={items.map(r => ({
+      avatar: r.nome, titulo: r.nome, sub: r.revenda, valor: r.ind, suffix: `ind. · ${fmtBRL(r.valor)}`,
+    }))} />
+  );
+}
+
+function TopAdvsReal({ casos }: { casos: UiCaso[] }) {
+  const items = useMemo(() => {
+    const map = new Map<string, { nome: string; resolvidos: number; tempoSum: number; tempoN: number }>();
+    casos.forEach(c => {
+      const key = c.advogado?.id || "—";
+      if (!c.advogado) return;
+      const cur = map.get(key) ?? { nome: c.advogado.nome, resolvidos: 0, tempoSum: 0, tempoN: 0 };
+      cur.resolvidos++;
+      const dur = (new Date(c.updated_at).getTime() - new Date(c.created_at).getTime()) / (1000 * 60 * 60 * 24);
+      if (dur > 0) { cur.tempoSum += dur; cur.tempoN++; }
+      map.set(key, cur);
+    });
+    return Array.from(map.values())
+      .sort((a, b) => b.resolvidos - a.resolvidos)
+      .slice(0, 5)
+      .map(a => ({ ...a, tempo: a.tempoN > 0 ? Math.round(a.tempoSum / a.tempoN) : 0 }));
+  }, [casos]);
+  if (items.length === 0) return <Empty icon={<Ic.Gavel size={18} />} title="Sem casos liberados no período" hint="Os top advogados vão aparecer aqui." />;
+  return (
+    <RankList items={items.map(a => ({
+      avatar: a.nome, titulo: a.nome, sub: `tempo médio ${a.tempo}d`, valor: a.resolvidos, suffix: "casos",
+    }))} />
+  );
+}
+
+function HeatmapReal({ casos }: { casos: UiCaso[] }) {
+  const data: [string, number][] = useMemo(() => {
+    const map = new Map<string, number>();
+    casos.forEach(c => {
+      const uf = c.lead?.uf;
+      if (uf) map.set(uf, (map.get(uf) ?? 0) + 1);
+    });
+    return Array.from(map.entries());
+  }, [casos]);
+  return (
+    <>
+      <BrazilHeatmap data={data} />
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 14, fontSize: 11, color: "var(--ink-3)" }}>
+        <span>Menos</span>
+        {[0,0.25,0.5,0.75,1].map(i => (
+          <span key={i} style={{ width: 16, height: 12, borderRadius: 2, border: "1px solid var(--line)", background: i === 0 ? "var(--surface-3)" : `oklch(${0.95 - i * 0.55} ${0.04 + i * 0.08} 255)` }} />
+        ))}
+        <span>Mais</span>
+      </div>
+    </>
   );
 }
 
@@ -217,7 +399,8 @@ function RankList({ items }: { items: RankItem[] }) {
 
 /* === Representantes (Supabase real) === */
 export function AdminRepresentantes() {
-  const [reps, setReps] = useState<RepRow[] | null>(null);
+  const CACHE_KEY = "admin-reps-list";
+  const [reps, setReps] = useState<RepRow[] | null>(() => readLiveCache<RepRow[]>(CACHE_KEY));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null); // id em ação
   const [f, setF] = useState<"Todos" | ContaStatus>("Todos");
@@ -232,7 +415,9 @@ export function AdminRepresentantes() {
       .eq("papel", "rep")
       .order("created_at", { ascending: false });
     if (error) { setError(error.message); return; }
-    setReps((data ?? []) as unknown as RepRow[]);
+    const next = (data ?? []) as unknown as RepRow[];
+    writeLiveCache(CACHE_KEY, next);
+    setReps(next);
   };
 
   useEffect(() => { load(); }, []);
@@ -391,23 +576,29 @@ type RevendaRow = {
   status: ContaStatus;
   created_at: string;
   coord: { nome: string; email: string } | null;
+  logo_url: string | null;
+  cor_primaria: string | null;
 };
 
 export function AdminRevendas() {
-  const [list, setList] = useState<RevendaRow[] | null>(null);
+  const CACHE_KEY = "admin-revendas-list";
+  const [list, setList] = useState<RevendaRow[] | null>(() => readLiveCache<RevendaRow[]>(CACHE_KEY));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showNew, setShowNew] = useState(false);
+  const [brandingFor, setBrandingFor] = useState<RevendaRow | null>(null);
 
   const load = async () => {
     setError(null);
     const { data, error } = await supabase
       .from("revendas")
-      .select("id, nome, cnpj, status, created_at, coord:profiles!revendas_coord_fk(nome, email)")
+      .select("id, nome, cnpj, status, created_at, logo_url, cor_primaria, coord:profiles!revendas_coord_fk(nome, email)")
       .order("created_at", { ascending: false });
     if (error) { setError(error.message); return; }
-    setList((data ?? []) as unknown as RevendaRow[]);
+    const next = (data ?? []) as unknown as RevendaRow[];
+    writeLiveCache(CACHE_KEY, next);
+    setList(next);
   };
 
   useEffect(() => { load(); }, []);
@@ -481,8 +672,18 @@ export function AdminRevendas() {
                 <tr key={r.id} style={{ borderBottom: "1px solid var(--line)" }}>
                   <td style={{ padding: "10px 12px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ width: 28, height: 28, borderRadius: 5, background: "var(--surface-3)", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--ink-3)" }}>
-                        <Ic.Building size={14} />
+                      <span style={{
+                        width: 28, height: 28, borderRadius: 5,
+                        background: r.cor_primaria || "var(--surface-3)",
+                        display: "inline-flex", alignItems: "center", justifyContent: "center",
+                        color: r.cor_primaria ? "white" : "var(--ink-3)",
+                        overflow: "hidden",
+                      }}>
+                        {r.logo_url ? (
+                          <img src={r.logo_url} alt="" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+                        ) : (
+                          <Ic.Building size={14} />
+                        )}
                       </span>
                       <div style={{ fontWeight: 500 }}>{r.nome}</div>
                     </div>
@@ -503,6 +704,7 @@ export function AdminRevendas() {
                   </td>
                   <td style={{ padding: "10px 12px", color: "var(--ink-3)" }} className="mono">{FMT_DATE(r.created_at)}</td>
                   <td style={{ padding: "10px 12px", textAlign: "right" }}>
+                    <Btn variant="ghost" size="sm" icon={<Ic.Settings size={12} />} onClick={() => setBrandingFor(r)}>Branding</Btn>
                     {r.status === "ativo" ? (
                       <Btn variant="ghost" size="sm" disabled={busy === r.id} onClick={() => setStatus(r.id, "suspenso")}>Suspender</Btn>
                     ) : (
@@ -517,6 +719,16 @@ export function AdminRevendas() {
       </div>
 
       {showNew && <NovaRevendaModal onClose={() => setShowNew(false)} />}
+      {brandingFor && (
+        <BrandingModal
+          revendaId={brandingFor.id}
+          revendaNome={brandingFor.nome}
+          logoUrl={brandingFor.logo_url}
+          corPrimaria={brandingFor.cor_primaria}
+          onClose={() => setBrandingFor(null)}
+          onSaved={load}
+        />
+      )}
     </div>
   );
 }
@@ -604,7 +816,8 @@ type AdvogadoRow = {
 };
 
 export function AdminAdvogados() {
-  const [list, setList] = useState<AdvogadoRow[] | null>(null);
+  const CACHE_KEY = "admin-advogados-list";
+  const [list, setList] = useState<AdvogadoRow[] | null>(() => readLiveCache<AdvogadoRow[]>(CACHE_KEY));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [showInvite, setShowInvite] = useState(false);
@@ -617,7 +830,9 @@ export function AdminAdvogados() {
       .eq("papel", "advogado")
       .order("created_at", { ascending: false });
     if (error) { setError(error.message); return; }
-    setList((data ?? []) as unknown as AdvogadoRow[]);
+    const next = (data ?? []) as unknown as AdvogadoRow[];
+    writeLiveCache(CACHE_KEY, next);
+    setList(next);
   };
 
   useEffect(() => { load(); }, []);

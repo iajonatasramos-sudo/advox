@@ -45,6 +45,17 @@ function readCachedProfile(userId: string): Profile | null {
   } catch { return null; }
 }
 
+// Versão sem userId — lê qualquer profile cacheado.
+// Usado pra render imediato antes do onAuthStateChange devolver a session.
+function readAnyCachedProfile(): Profile | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as { userId: string; profile: Profile };
+    return data.profile ?? null;
+  } catch { return null; }
+}
+
 function writeCachedProfile(userId: string, profile: Profile) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ userId, profile })); } catch { /* ignore quota */ }
 }
@@ -86,9 +97,11 @@ async function fetchProfileWithRetry(userId: string, attempt = 1): Promise<Profi
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  // Restaura profile cacheado sincronamente — UI renderiza imediato.
+  // Session continua sendo confirmada por onAuthStateChange.
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(() => readAnyCachedProfile());
   const [profileError, setProfileError] = useState<string | null>(null);
 
   const loadProfile = async (userId: string) => {
@@ -175,7 +188,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await loadProfile(newSession.user.id);
         }
       } else {
+        // Sem session = limpa profile cacheado (token stale ou logout)
         lastLoadedUserId = null;
+        clearCachedProfile();
         setProfile(null);
       }
 
@@ -198,8 +213,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const userId = session.user.id;
     let channel: ReturnType<typeof supabase.channel> | null = null;
     try {
+      // nome único por mount — evita reaproveitar canal já `subscribed`
+      // (StrictMode em dev dispara o effect 2x)
       channel = supabase
-        .channel(`profile-${userId}`)
+        .channel(`profile-${userId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`)
         .on(
           "postgres_changes",
           { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${userId}` },
