@@ -181,16 +181,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // ÚNICO caminho de inicialização: onAuthStateChange dispara INITIAL_SESSION
     // logo no mount com a sessão em cache (se houver). Evita race com getSession().
     let lastLoadedUserId: string | null = null;
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+    const finishInit = () => {
+      if (!mounted) return;
+      clearTimeout(timeout);
+      setLoading(false);
+      console.log("[Advox] auth init done");
+    };
+
+    // IMPORTANTE: o callback NÃO pode ser async nem chamar o Supabase direto.
+    // O supabase-js segura um lock de auth enquanto o callback roda; qualquer
+    // supabase.from()/getUser() aqui dentro espera esse mesmo lock → deadlock
+    // (a request nem sai e o app fica em "Carregando…"). Por isso o
+    // loadProfile é adiado com setTimeout(0), fora do callback.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (!mounted) return;
       console.log("[Advox] onAuthStateChange", event, { hasSession: !!newSession });
       setSession(newSession);
 
-      if (newSession?.user?.id) {
+      const userId = newSession?.user?.id;
+      if (userId) {
         // Evita loadProfile duplicado para o mesmo user em eventos seguidos
-        if (lastLoadedUserId !== newSession.user.id) {
-          lastLoadedUserId = newSession.user.id;
-          await loadProfile(newSession.user.id);
+        if (lastLoadedUserId !== userId) {
+          lastLoadedUserId = userId;
+          setTimeout(() => {
+            if (!mounted) return;
+            loadProfile(userId).finally(finishInit);
+          }, 0);
+          return;
         }
       } else {
         // Sem session = limpa profile cacheado (token stale ou logout)
@@ -199,9 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(null);
       }
 
-      clearTimeout(timeout);
-      setLoading(false);
-      console.log("[Advox] auth init done");
+      finishInit();
     });
 
     return () => {

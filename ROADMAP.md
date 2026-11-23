@@ -98,12 +98,13 @@ Testado com 67 cenários (32 ataques + 35 fluxos legítimos) aplicando todas as 
 
 ### 1. Imediato
 - [x] Migrations 0009–0014 aplicadas em produção (23/11)
-- [ ] Smoke test no app: cadastro de rep, aprovação pelo coord, convite, desbloquear cliente, upload de documento
+- [x] Smoke test dos fluxos no banco (19 cenários, 23/11): cadastro, aprovação, convite, desbloquear, documento, isolamento
+- [ ] Smoke test pela UI logada (depende de login manual)
 - [ ] Conferir em Authentication → Settings se **confirmação de email** está ligada (afeta o fluxo de convite — ver abaixo)
 
 ### 2. Bugs conhecidos ainda abertos
 - [ ] **Convite com confirmação de email ligada:** sem sessão após o signUp, o RPC falha. Precisa de tela "aceitar convite" para usuário já logado e `emailRedirectTo` preservando `?invite=`. Mesmo caso: quem já tem conta não consegue aceitar convite
-- [ ] Possível travamento no load de auth: `onAuthStateChange` faz `await` de chamadas Supabase dentro do callback (padrão que o supabase-js desaconselha — provável causa da "gotcha #1" do Chrome)
+- [x] Travamento no load de auth (reproduzido em prod 23/11): `onAuthStateChange` não chama mais o Supabase dentro do callback — loadProfile adiado com setTimeout(0)
 - [ ] Kanban sem update otimista nem tratamento de erro; mover para/de `travado` não cria/desvincula caso
 - [ ] Caso `liberado` não atualiza o lead (fica `travado`) nem preenche `liberado_em`
 - [ ] `sla_dias` / `dias_indicacao` nunca são calculados (sempre 0) — alerta de "parados > 5 dias" nunca dispara
