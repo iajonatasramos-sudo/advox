@@ -10,7 +10,9 @@ _Última revisão: 23/11/2026 — varredura completa de código + testes de RLS 
 
 **Funcionalmente completo para os 4 papéis, com dados reais.** A varredura de 23/11/2026 encontrou falhas de segurança sérias no banco (qualquer usuário podia virar admin) e bugs de uso real. As correções estão na migration `0013` e nos ajustes de frontend do mesmo dia.
 
-> ⚠️ **Ação pendente:** rodar `supabase/migrations/0013_security_hardening.sql` no SQL Editor do Supabase. Até isso ser feito, **as brechas continuam abertas em produção**.
+> ✅ **23/11/2026:** produção estava sem 0009, 0011 e 0012 (projeto tinha ficado pausado). Aplicadas 0009, 0011, 0012, 0013 e 0014 e verificadas (escalonamento rep→admin bloqueado, anon só lê revendas ativas).
+>
+> ⚠️ Projeto Supabase está no **plano free** — pausa após 7 dias sem uso. Considerar Pro antes de clientes reais. Ligar "Leaked password protection" em Authentication.
 
 ---
 
@@ -95,7 +97,8 @@ Testado com 67 cenários (32 ataques + 35 fluxos legítimos) aplicando todas as 
 ## 🔜 Próximos passos (por prioridade)
 
 ### 1. Imediato
-- [ ] **Rodar a migration 0013 no Supabase** e fazer smoke test: cadastro de rep, aprovação pelo coord, convite, desbloquear cliente, upload de documento
+- [x] Migrations 0009–0014 aplicadas em produção (23/11)
+- [ ] Smoke test no app: cadastro de rep, aprovação pelo coord, convite, desbloquear cliente, upload de documento
 - [ ] Conferir em Authentication → Settings se **confirmação de email** está ligada (afeta o fluxo de convite — ver abaixo)
 
 ### 2. Bugs conhecidos ainda abertos
