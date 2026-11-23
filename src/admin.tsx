@@ -6,11 +6,9 @@ import {
 } from "./ui";
 import { RepLista } from "./rep";
 import {
-  ADVOGADOS, REPRESENTANTES, AUDITORIA, HEATMAP, TOP_REPS, TOP_ADV,
-  KPIS_ADMIN, PIPELINE_JURIDICO, PIPELINE_COMERCIAL, fmtBRL,
+  PIPELINE_JURIDICO, PIPELINE_COMERCIAL, fmtBRL,
   type Caso, type Stage,
 } from "./data";
-import { useStore } from "./store";
 import { supabase } from "./lib/supabase";
 import type { ContaStatus } from "./lib/database.types";
 import { useLiveLeads, useLiveCasos, useLiveAuditoria, readLiveCache, writeLiveCache, type UiLead, type UiCaso } from "./lib/data-live";

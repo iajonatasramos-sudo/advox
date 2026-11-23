@@ -6,7 +6,7 @@ import {
 } from "./ui";
 import {
   useLiveLeads, useLiveCasos, useLiveTarefas, updateLead, createLead, toggleTarefa,
-  PIPELINE_COMERCIAL_DB, PIPELINE_JURIDICO_DB, fmtBRL, OPERADORAS_LIST,
+  PIPELINE_COMERCIAL_DB, PIPELINE_JURIDICO_DB, fmtBRL, parseBRL, OPERADORAS_LIST,
   type UiLead, type UiCaso, type UiTarefa,
 } from "./lib/data-live";
 import { useAuth } from "./auth";
@@ -331,7 +331,7 @@ function NovoLeadModal({ onClose }: { onClose: () => void }) {
       cidade: cidade.trim() || null,
       uf: uf || null,
       operadora,
-      valor: Number(valor.replace(/[^\d.,]/g, "").replace(",", ".")) || 0,
+      valor: parseBRL(valor),
       status: "novo",
       tag: tag.trim() || null,
       origem,
@@ -582,11 +582,13 @@ function NotasLead({ leadId }: { leadId: string }) {
   const submit = async () => {
     if (!novo.trim() || !profile?.id) return;
     setBusy(true);
-    await supabase.from("notas").insert({
+    const { error } = await supabase.from("notas").insert({
       lead_id: leadId, autor_id: profile.id, texto: novo.trim(), tipo: tipoNovo, interno: false,
     } as never);
-    setNovo("");
     setBusy(false);
+    if (error) { window.alert("Não foi possível salvar a nota: " + error.message); return; }
+    setNovo("");
+    load();
   };
 
   return (
@@ -791,13 +793,15 @@ function NovaTarefaModal({ onClose }: { onClose: () => void }) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile?.id) return;
+    if (!leadId) { setErr("Selecione o lead da tarefa."); return; }
     setBusy(true);
     setErr(null);
     const { error } = await supabase.from("tarefas").insert({
       autor_id: profile.id,
-      lead_id: leadId || null,
+      lead_id: leadId,
       descricao: desc.trim(),
-      quando: quando || null,
+      // datetime-local não tem fuso: converte do horário local para ISO (UTC)
+      quando: quando ? new Date(quando).toISOString() : null,
       prioridade,
       urgencia,
     } as never);
@@ -826,8 +830,11 @@ function NovaTarefaModal({ onClose }: { onClose: () => void }) {
           <Field label="Descrição">
             <Input full value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Ligar para cliente, enviar proposta…" autoFocus />
           </Field>
-          <Field label="Lead vinculado (opcional)">
-            <Select value={leadId} onChange={e=>setLeadId(e.target.value)} options={["", ...((leads ?? []).map(l => l.empresa))]} />
+          <Field label="Lead vinculado">
+            <Select value={leadId} onChange={e=>setLeadId(e.target.value)} options={[
+              { value: "", label: "Selecione…" },
+              ...((leads ?? []).map(l => ({ value: l.id, label: l.empresa }))),
+            ]} />
           </Field>
           <div className="grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Prioridade">
@@ -842,7 +849,7 @@ function NovaTarefaModal({ onClose }: { onClose: () => void }) {
           </Field>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 6 }}>
             <Btn variant="ghost" onClick={onClose}>Cancelar</Btn>
-            <Btn variant="primary" type="submit" disabled={busy || !desc.trim()}>{busy ? "Salvando…" : "Criar tarefa"}</Btn>
+            <Btn variant="primary" type="submit" disabled={busy || !desc.trim() || !leadId}>{busy ? "Salvando…" : "Criar tarefa"}</Btn>
           </div>
         </form>
       </div>

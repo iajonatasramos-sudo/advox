@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Ic } from "./icons";
 import { Btn, Avatar, Input, StatusPill, OperadoraTag, Field, Select } from "./ui";
-import { OPERADORAS_LIST, useLiveLeads, createLead, createCaso, fmtBRL, PIPELINE_COMERCIAL_DB } from "./lib/data-live";
+import { OPERADORAS_LIST, useLiveLeads, createLead, createCaso, fmtBRL, parseBRL, PIPELINE_COMERCIAL_DB } from "./lib/data-live";
 import { useAuth } from "./auth";
 import { supabase } from "./lib/supabase";
 import type { Operadora } from "./lib/database.types";
@@ -74,10 +74,11 @@ export function ModalDesbloquear({ open, onClose }: { open: boolean; onClose: ()
     setErr(null);
 
     let leadId = data.leadId;
-    const multaNum = Number((data.valor || "0").replace(/[^\d.,]/g, "").replace(",", ".")) || 0;
+    const multaNum = parseBRL(data.valor);
 
-    // Se é novo lead, cria primeiro
-    if (data.novo) {
+    // Se é novo lead, cria primeiro (exceto em retry: o lead já foi criado
+    // numa tentativa anterior e está guardado em data.leadId)
+    if (data.novo && !data.leadId) {
       const { data: novoLead, error } = await createLead({
         empresa: data.empresa.trim() || data.nome.trim(),
         contato: data.nome.trim(),
@@ -93,10 +94,12 @@ export function ModalDesbloquear({ open, onClose }: { open: boolean; onClose: ()
       });
       if (error || !novoLead) { setErr(error || "Falha ao criar lead"); setBusy(false); return; }
       leadId = novoLead.id;
-    } else if (leadId) {
+      setData(d => ({ ...d, leadId: novoLead.id }));
+    } else if (leadId && !data.novo) {
       // Move lead existente para 'travado'
-      await supabase.from("leads").update({ status: "travado" } as never).eq("id", leadId);
-    } else {
+      const { error: mvErr } = await supabase.from("leads").update({ status: "travado" } as never).eq("id", leadId);
+      if (mvErr) { setErr(`Falha ao atualizar o lead: ${mvErr.message}`); setBusy(false); return; }
+    } else if (!leadId) {
       setErr("Selecione um lead.");
       setBusy(false);
       return;
@@ -112,11 +115,24 @@ export function ModalDesbloquear({ open, onClose }: { open: boolean; onClose: ()
       dias_indicacao: 0,
       prox_passo: "Aguardando atribuição de advogado",
     });
-    setBusy(false);
-    if (errC || !novoCaso) { setErr(errC || "Falha ao criar caso"); return; }
+    if (errC || !novoCaso) { setBusy(false); setErr(errC || "Falha ao criar caso"); return; }
 
     // Liga o lead ao caso
-    await supabase.from("leads").update({ advox_caso_id: novoCaso.id } as never).eq("id", leadId!);
+    const { error: linkErr } = await supabase.from("leads").update({ advox_caso_id: novoCaso.id } as never).eq("id", leadId!);
+    if (linkErr) console.error("[Advox] falha ao vincular lead ao caso", linkErr);
+
+    // Contexto para o escritório: descrição + WhatsApp do cliente viram a 1ª nota do caso
+    const contexto = [
+      data.desc.trim(),
+      data.whats.trim() && `WhatsApp do cliente: ${data.whats.trim()}`,
+    ].filter(Boolean).join("\n\n");
+    if (contexto) {
+      const { error: notaErr } = await supabase.from("notas").insert({
+        caso_id: novoCaso.id, autor_id: profile.id, texto: contexto, tipo: "nota", interno: false,
+      } as never);
+      if (notaErr) console.error("[Advox] falha ao salvar descrição do caso", notaErr);
+    }
+    setBusy(false);
 
     setCasoIdCriado(novoCaso.id);
     setStep(4);
@@ -128,12 +144,12 @@ export function ModalDesbloquear({ open, onClose }: { open: boolean; onClose: ()
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <p style={{ margin: 0, color: "var(--ink-2)", fontSize: 13 }}>Esse cliente já está cadastrado no seu pipeline?</p>
           <div className="grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <button onClick={() => { setData(d => ({ ...d, novo: false })); setStep(1); }} style={cardChoice}>
+            <button onClick={() => { setData(d => ({ ...d, novo: false, leadId: null })); setStep(1); }} style={cardChoice}>
               <Ic.Search size={20} />
               <div style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>Já está cadastrado</div>
               <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>Buscar lead existente e indicar para o Advox</div>
             </button>
-            <button onClick={() => { setData(d => ({ ...d, novo: true })); setStep(1); }} style={cardChoice}>
+            <button onClick={() => { setData(d => ({ ...d, novo: true, leadId: null })); setStep(1); }} style={cardChoice}>
               <Ic.Plus size={20} />
               <div style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>Cadastrar do zero</div>
               <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>Capturar os dados agora para já encaminhar</div>
@@ -233,7 +249,7 @@ export function ModalDesbloquear({ open, onClose }: { open: boolean; onClose: ()
             <SummaryRow label="Localização" value={data.uf} />
             <SummaryRow label="Operadora" value={<OperadoraTag op={data.operadora} />} />
             <SummaryRow label="Tipo de bloqueio" value={data.tipo} />
-            <SummaryRow label="Valor estimado" value={fmtBRL(Number((data.valor||"0").replace(/[^\d.,]/g, "").replace(",", ".")) || 0)} />
+            <SummaryRow label="Valor estimado" value={fmtBRL(parseBRL(data.valor))} />
             <SummaryRow label="Encaminhamento" value="Time jurídico Advox (alocação automática)" last />
           </div>
           <label style={{

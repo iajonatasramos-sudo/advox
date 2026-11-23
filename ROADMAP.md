@@ -1,181 +1,149 @@
 # Advox — Roadmap
 
-Sistema CRM Telecom + Jurídico. Frontend em **Vite + React + TS**, backend em **Supabase** (Postgres + Auth + Storage), hospedagem prevista em **VPS própria** (frontend) + **Supabase Cloud** (backend).
+Sistema CRM Telecom + Jurídico. Frontend em **Vite + React + TS**, backend em **Supabase** (Postgres + Auth + Storage + Realtime), frontend hospedado em **VPS Hostinger via Dokploy** (Docker + Nginx).
+
+_Última revisão: 23/11/2026 — varredura completa de código + testes de RLS em Postgres local._
 
 ---
 
-## Estado atual: ✅ Frontend completo · ✅ Auth funcionando · 🔜 Migrando para dados reais
+## Estado atual
 
-Estamos no **fim da Fase 3** e prestes a iniciar a **Fase 4**.
+**Funcionalmente completo para os 4 papéis, com dados reais.** A varredura de 23/11/2026 encontrou falhas de segurança sérias no banco (qualquer usuário podia virar admin) e bugs de uso real. As correções estão na migration `0013` e nos ajustes de frontend do mesmo dia.
 
----
-
-## 📦 Frontend (pré-backend) — ✅ Concluído
-
-Construído antes da decisão de backend. Tudo isso já está rodando.
-
-- [x] Scaffold Vite + React + TS, dependências, build limpo
-- [x] Sistema visual ("Sinal" — azul-elétrico + magenta) com fontes Geist/JetBrains/Newsreader
-- [x] **Personas** com telas dedicadas: Representante, Coordenador (revenda), Advogado, Admin
-- [x] **~25 telas** implementadas:
-  - 5 do Representante (Dashboard kanban+lista, Lead Detail, Tarefas, Casos)
-  - 5 do Coordenador (Painel, Meu Time, Leads da Equipe, Casos, Tarefas)
-  - 3 do Advogado (Dashboard kanban, Caso Detail, Prazos)
-  - 7 do Admin (Visão Geral, Representantes, Advogados, Todos Leads, Todos Casos, Auditoria, Configurações)
-  - Telas auxiliares: Perfil, Notificações, Onboarding, 404/500
-- [x] **Modal Desbloquear Cliente** — wizard 4 passos
-- [x] **Responsividade mobile** completa (drawer sidebar, tabs scrolláveis, grids que empilham, modais full-screen)
-- [x] **Drag-and-drop** nos kanbans (Rep, Adv, Coord) — funciona localmente
+> ⚠️ **Ação pendente:** rodar `supabase/migrations/0013_security_hardening.sql` no SQL Editor do Supabase. Até isso ser feito, **as brechas continuam abertas em produção**.
 
 ---
 
-## 🚀 Backend — fases planejadas
+## ✅ Concluído
 
-### Fase 1 — Setup Supabase ✅ Concluída
+### Frontend base
+- [x] Vite + React + TS, sistema visual "Sinal", responsivo (drawer, modais full-screen)
+- [x] ~25 telas para Rep, Coord, Advogado e Admin + Perfil, Notificações, Onboarding, 404/500
+- [x] Wizard **Desbloquear Cliente** (4 passos)
+- [x] Kanban com drag-and-drop persistindo no banco
+- [x] ErrorBoundary + cache local (SWR) de profile e listas
+- [x] Branding por revenda (logo + cor primária)
 
-- [x] Conta + projeto Supabase Cloud criados (`ubnceeshmwzgwarprbht`)
-- [x] `@supabase/supabase-js` instalado
-- [x] `.env.local` configurado (URL + anon key)
-- [x] Cliente Supabase tipado (`src/lib/supabase.ts`)
-- [x] Tipos TypeScript do schema (`src/lib/database.types.ts`)
-- [x] `.gitignore` protegendo credenciais
+### Supabase
+- [x] Schema completo (10 tabelas + notificações + aceites), enums, triggers de `updated_at` e auditoria
+- [x] RLS em todas as tabelas, helpers `security definer` (sem recursão — migration 0010)
+- [x] Realtime em profiles, leads, casos, tarefas, revendas, notificações (+ notas, documentos, convites, auditoria, prazos na 0013)
+- [x] Storage privado `documentos` (URL assinada de 60s) + bucket público `revenda-logos`
 
-### Fase 2 — Schema + RLS ✅ Concluída
+### Auth e usuários
+- [x] Login, cadastro de Rep com escolha de revenda, recuperação de senha, Google OAuth (botão pronto)
+- [x] Telas "Aguardando aprovação" e "Acesso bloqueado"; status reativo via realtime
+- [x] Convites com token de 7 dias (Admin → Coord/Advogado; Coord → Rep) via RPC
+- [x] Aprovar / recusar / suspender / reativar usuários; reatribuir advogado
 
-- [x] Migration [`0001_initial_schema.sql`](supabase/migrations/0001_initial_schema.sql) com 10 tabelas e 7 enums
-- [x] Row Level Security por papel (Admin / Coord / Rep / Advogado)
-- [x] Triggers de auditoria automática (leads, casos, profiles, revendas)
-- [x] View `revenda_stats` para contadores agregados
-- [x] Migration [`0002_fix_trigger.sql`](supabase/migrations/0002_fix_trigger.sql) — robustez no trigger de signup
-- [x] Migration [`0003_drop_trigger_use_frontend.sql`](supabase/migrations/0003_drop_trigger_use_frontend.sql) — frontend cria profile (mais previsível)
+### Dados reais por tela
+| Papel | Tela | Status |
+|---|---|---|
+| Rep | Dashboard kanban/lista, Novo Lead, Lead Detail, Casos | ✅ |
+| Rep | Tarefas | ✅ (criação corrigida em 23/11) |
+| Rep | Desbloquear | ✅ (valor, retry e descrição corrigidos em 23/11) |
+| Coord | Painel, Meu Time, Leads da Equipe, Casos | ✅ |
+| Coord | Tarefas | 🟡 só leitura (não cria; marcar tarefa de outro não tem efeito) |
+| Advogado | Kanban, Caso Detail (status, notas, documentos) | ✅ |
+| Advogado | Prazos | 🟡 só leitura — falta UI de criar/editar (banco já permite após 0013) |
+| Admin | Visão Geral, Representantes, Advogados, Leads, Casos, Auditoria | ✅ |
+| Admin | Revendas | ✅ suspender/reativar passa a funcionar após 0013 |
+| Admin | Configurações | ❌ mock (webhooks, templates, editor de pipeline não salvam) |
 
-### Fase 3 — Autenticação ✅ Concluída
+### LGPD
+- [x] Exportar meus dados (JSON), excluir conta (suspensão), aceite de termos versionado, auditoria automática
 
-- [x] `AuthProvider` ([src/auth.tsx](src/auth.tsx)) com session + profile + realtime
-- [x] Tela de **Login** (email/senha)
-- [x] Tela de **Cadastro de Representante** (com seleção de revenda)
-- [x] **Google OAuth** (botão pronto — falta habilitar provider no Dashboard)
-- [x] Tela de **"Aguardando aprovação"** + botão "Verificar agora"
-- [x] Tela de **acesso bloqueado** (suspenso/recusado)
-- [x] Tela de **recuperação de senha**
-- [x] **Route guards** (loading / login / pending / app)
-- [x] Realtime: status do profile atualiza sem reload
-- [x] Topbar exibe papel real, botão **Sair**
-- [x] Mensagens de erro humanizadas
-- [x] Safety timeouts e tela de erro do profile (rede de segurança)
+### Deploy
+- [x] Dockerfile multi-stage + Nginx (SPA, gzip, cache), [DEPLOY.md](DEPLOY.md), code splitting
+- [x] Rodando via Dokploy na VPS (porta interna 3000)
 
-### Fase 4 — Migrar mocks para Supabase 🔜 **PRÓXIMA**
+---
 
-Substituir `useStore` (mocks) por queries reais do Supabase. **Esta é a fase que torna o sistema "vivo".**
+## 🔒 Varredura 23/11/2026 — o que foi corrigido
 
-- [ ] **Revendas**: tela Admin lista/cria/edita revendas do banco
-- [ ] **Profiles** (usuários): Admin Representantes + Coord Meu Time vêm do banco
-- [ ] **Leads**:
-  - Listagem (Rep Dashboard kanban+lista, Coord Leads, Admin Todos Leads)
-  - Criar lead (botão "Novo Lead")
-  - Editar lead (no detalhe)
-  - Drag-and-drop **persiste** mudança de status
-  - **Realtime** — mover card no Rep aparece pro Coord/Admin em tempo real
-- [ ] **Casos**:
-  - Listagem (Adv kanban, Rep Casos, Coord Casos, Admin Todos Casos)
-  - Criar caso via Modal Desbloquear (já existe a UI, falta gravar)
-  - Update de status no detalhe (Advogado)
-- [ ] **Tarefas**: criar, completar, listar (Rep Tarefas + Coord Tarefas da Equipe)
-- [ ] **Notas/Timeline** no lead detail + caso detail (insert real)
-- [ ] **Prazos** (Adv Prazos)
-- [ ] **Auditoria** (Admin Auditoria) — já é populada por trigger, só ler
-- [ ] Loading + error states em todas as telas
+Testado com 67 cenários (32 ataques + 35 fluxos legítimos) aplicando todas as migrations num Postgres 17 local com shim do Supabase. **Antes da 0013: 23 ataques funcionavam e 9 fluxos legítimos falhavam. Depois: 67/67 OK.**
 
-**Estimativa**: a maior das fases — ~10-15 sessões de trabalho dependendo do detalhe.
+### Banco — migration `0013_security_hardening.sql`
+- [x] **Crítico:** usuário podia se promover a admin / se cadastrar como admin / se reativar após suspenso → trigger `guard_profile_changes`
+- [x] Contas pendentes/suspensas perdem acesso a dados (`current_papel()` só vale para ativos)
+- [x] Rep criava caso em lead alheio, já "liberado" ou com advogado escolhido → policy `casos_insert_scoped`
+- [x] Advogado trocava `lead_id` do caso para ler lead de outro → trigger `guard_caso_changes`
+- [x] Documento forjado dava acesso a arquivo de terceiros; upload em pasta alheia → path amarrado ao lead/caso acessível
+- [x] `revenda_stats` ignorava RLS (anon via tudo) e somava faturamento em dobro → `security_invoker` + subqueries
+- [x] `aceitar_convite` confiava no `user_id` do cliente → usa `auth.uid()` + email do `auth.users`; cria o profile se faltar
+- [x] Rep/coord moviam lead para outra revenda/rep; notas, tarefas e docs em lead/caso alheio → `WITH CHECK`
+- [x] Coord alterava nome/status da própria revenda; cor aceitava CSS arbitrário → trigger `guard_revenda_changes`
+- [x] Funções `security definer` sem `search_path` fixo
+- [x] Admin não via revenda suspensa (não conseguia reativar)
+- [x] Rep/coord não viam nome do advogado nem notas/docs do caso; advogado não via docs do lead
+- [x] Faltavam policies: excluir documento/tarefa, atualizar/excluir prazo, revogar convite
 
-### Fase 5 — Aprovações + Convites + UI Admin completa ✅ Concluída
+### Frontend
+- [x] Rep que se cadastrava sozinho ficava **sem revenda** (nunca aparecia para o coord) → `revenda_id` no metadata do signUp
+- [x] "Nova tarefa" sempre falhava (mandava o nome da empresa como `lead_id`)
+- [x] Valores em formato BR: "48.000" era salvo como 48 → `parseBRL`
+- [x] Prazos apareciam **um dia antes** (fuso UTC) → `parseDateOnly`
+- [x] Horário de tarefa deslocado 3h (datetime-local sem fuso)
+- [x] Wizard: retry criava lead duplicado; erros ignorados; descrição e WhatsApp do cliente eram descartados (agora viram a 1ª nota do caso)
+- [x] Notas e documentos novos não apareciam sem trocar de aba; excluir documento deixava registro quebrado
+- [x] Cache de dados vazava entre usuários na mesma aba após logout
+- [x] Nome da revenda no topo vinha de mock; botão "Sair" da sidebar não funcionava
+- [x] Nginx: headers de segurança não eram enviados no HTML; asset inexistente retornava HTML com 404
 
-- [x] **Coord aprova/recusa Reps** direto na UI (botões na tela "Meu Time")
-- [x] **Admin aprova/recusa Coords e Advogados** direto na UI
-- [x] **Sistema de convites** com link compartilhável:
-  - Admin → convida Coord/Advogado
-  - Coord → convida Reps da própria revenda
-  - Token de 7 dias armazenado em `convites`
-  - Tela pública "Aceitar convite" (URL `?invite=TOKEN`)
-  - RPC `get_invite` / `aceitar_convite` (security-definer)
-- [x] **Admin cadastra/edita revendas** via UI
-- [x] **Reatribuir casos** (Admin → trocar advogado responsável)
-- [x] **Suspender/reativar** usuários
-- [ ] Tela de **detalhe do Representante** (histórico do rep — futuro)
-- [ ] Envio real de email do convite (hoje gera só o link; futuro: Edge Function + Resend)
+---
 
-### Fase 6 — Storage de Documentos ✅ Concluída
+## 🔜 Próximos passos (por prioridade)
 
-- [x] Bucket `documentos` no Supabase Storage (criar manualmente — instruções na migration 0007)
-- [x] Migration `0007_storage_docs.sql` com policies do bucket
-- [x] Upload de PDF/imagem em leads (aba Documentos) — componente `DocumentosLista`
-- [x] Upload de PDF/imagem em casos (aba Documentos)
-- [x] Download com URL assinada (privada, expira em 60s)
-- [x] Policies vinculadas às policies da tabela `documentos` (Rep só vê dos seus leads, Advogado só dos seus casos, etc.)
-- [x] Realtime — quando alguém faz upload, aparece pra todos sem reload
-- [ ] Compressão/preview de imagens (deixado pra futuro)
+### 1. Imediato
+- [ ] **Rodar a migration 0013 no Supabase** e fazer smoke test: cadastro de rep, aprovação pelo coord, convite, desbloquear cliente, upload de documento
+- [ ] Conferir em Authentication → Settings se **confirmação de email** está ligada (afeta o fluxo de convite — ver abaixo)
 
-### Fase 7 — Notificações & Comunicação (parcial)
+### 2. Bugs conhecidos ainda abertos
+- [ ] **Convite com confirmação de email ligada:** sem sessão após o signUp, o RPC falha. Precisa de tela "aceitar convite" para usuário já logado e `emailRedirectTo` preservando `?invite=`. Mesmo caso: quem já tem conta não consegue aceitar convite
+- [ ] Possível travamento no load de auth: `onAuthStateChange` faz `await` de chamadas Supabase dentro do callback (padrão que o supabase-js desaconselha — provável causa da "gotcha #1" do Chrome)
+- [ ] Kanban sem update otimista nem tratamento de erro; mover para/de `travado` não cria/desvincula caso
+- [ ] Caso `liberado` não atualiza o lead (fica `travado`) nem preenche `liberado_em`
+- [ ] `sla_dias` / `dias_indicacao` nunca são calculados (sempre 0) — alerta de "parados > 5 dias" nunca dispara
+- [ ] Urgência de tarefa é manual (não deriva de `quando`); KPIs "do mês" contam todo o período
+- [ ] Wizard aberto por coord/admin só lista os próprios leads; pode criar 2º caso para lead que já teve caso
+- [ ] Tema da revenda persiste na tela de login após logout
+- [ ] `database.types.ts` desatualizado (faltam `notificacoes`, `aceites_termos`, RPCs) — daí os `as never`
+- [ ] Erros ainda via `alert()` em coord/admin
 
-- [x] **Tabela `notificacoes`** com RLS (usuário só vê próprias)
-- [x] **Triggers automáticos** criam notificações em eventos chave:
-  - Caso atribuído a advogado → notifica advogado
-  - Caso muda de status → notifica rep + coord
-  - Caso liberado → notificação destacada para rep + coord
-  - Rep aprovado → notifica o rep
-- [x] **Feed in-app** no sininho do topbar (com contador de não-lidas)
-- [x] **Realtime** — notificação chega sem reload
-- [x] **Marcar como lida** (individual ou todas)
-- [ ] **Templates de email transacional** (precisa Edge Function + Resend/SendGrid)
-- [ ] **WhatsApp Business API** (opcional, futuro)
-- [ ] **Push notifications** web (opcional, futuro PWA)
+### 3. Funcionalidades faltando
+- [ ] UI de criar/editar **prazos** (Advogado)
+- [ ] Criar tarefas/leads pelo Coord
+- [ ] Honorários editáveis (hoje fixo em 20% na tela)
+- [ ] Botões sem ação: Exportar (Rep/Admin), Ligar/WhatsApp/Email no lead, busca do Advogado e do wizard
+- [ ] Admin → Configurações (hoje mock)
+- [ ] Importar leads via CSV
+- [ ] Detalhe do Representante (histórico)
+- [ ] LGPD: export sem aceites/notificações/documentos; "excluir conta" não agenda exclusão real
 
-### Fase 8 — LGPD & Compliance ✅ Concluída
+### 4. Produção
+- [ ] Domínio + SSL + URLs de redirect no Supabase (Auth) + Google OAuth de prod
+- [ ] Emails transacionais (convite, notificações) — Edge Function + Resend
+- [ ] Páginas de Termos de Uso e Política de Privacidade
+- [ ] Backup, monitoramento (uptime/erros), CSP e HSTS
+- [ ] Dockerfile falhar o build se `VITE_*` estiverem vazias
 
-- [x] **Exportar meus dados** (tela Perfil → LGPD → gera JSON com profile + leads + casos + tarefas + notas)
-- [x] **Excluir minha conta** (suspende conta + logout)
-- [x] **Audit log** automático em leads/casos/profiles/revendas
-- [x] **Aceite de termos** registrado na tabela `aceites_termos` (versionado, com IP/user-agent)
-- [x] Aceite automático no signup público + ao aceitar convite
-- [x] Visualização dos aceites no Perfil → Privacidade LGPD
-- [ ] **Política de privacidade** + **Termos de uso** publicados como página (textos legais — produção)
-
-### Fase 9 — Deploy & Produção 🟡 Guia pronto, execução pelo usuário
-
-- [x] **[`DEPLOY.md`](DEPLOY.md)** — guia completo passo a passo
-- [x] Code splitting (React/Supabase/app em chunks separados)
-- [x] Build de produção limpo (`npm run build`)
-- [ ] Executar na VPS — Nginx + Let's Encrypt + DNS configurados
-- [ ] Authentication URL Configuration no Supabase com o domínio de prod
-- [ ] Google OAuth com redirect URI de prod
-- [ ] Backup automático/manual configurado
-- [ ] Monitoramento básico (uptime, erros)
-- [ ] CI/CD simples (futuro — GitHub Actions)
-
-### Fase 10 — Polish (após produção)
-
-- [ ] Testes E2E (Playwright) cobrindo signup, aprovação, criar lead, mover kanban, desbloquear
-- [ ] Performance: lazy-load de rotas pesadas, code-splitting
+### 5. Polish
+- [ ] Testes E2E (Playwright) + transformar a suíte de RLS em teste automatizado no repo
+- [ ] Debounce/filtro nos canais realtime (hoje cada evento refaz a query inteira)
 - [ ] Acessibilidade (WCAG AA)
-- [ ] Migração opcional para **Supabase self-hosted** na sua VPS (zero dependência de fornecedor)
-- [ ] Iteração com feedback dos usuários reais
 
 ---
 
 ## 📊 Progresso resumido
 
-| Fase | Status | Tamanho |
-|------|--------|---------|
-| Frontend (telas + visual + responsivo + DnD) | ✅ | grande |
-| 1 — Setup Supabase | ✅ | pequena |
-| 2 — Schema + RLS | ✅ | média |
-| 3 — Autenticação | ✅ | grande |
-| 4 — Mocks → Supabase | ✅ | grande |
-| 5 — Aprovações + Convites + UI Admin | ✅ | média |
-| 6 — Storage de Documentos | ✅ | pequena |
-| 7 — Notificações (in-app + triggers) | 🟡 | parcial (email é Edge Function — futuro) |
-| 8 — LGPD | ✅ | completa (faltam textos legais) |
-| 9 — Deploy | 🟡 | guia pronto — execução na VPS |
-| 10 — Polish | ⏳ | contínua |
-
-**Resumo:** 8 fases concluídas + 2 parciais. O **código está pronto para produção**. Falta apenas executar o deploy (seguindo [`DEPLOY.md`](DEPLOY.md)) e, opcionalmente, configurar emails transacionais. O sistema está funcionalmente completo.
+| Área | Status |
+|---|---|
+| Frontend (telas, visual, responsivo, DnD) | ✅ |
+| Schema + RLS | ✅ após 0013 (pendente aplicar em prod) |
+| Autenticação + convites | 🟡 falta fluxo com confirmação de email |
+| Dados reais em todas as telas | 🟡 Prazos/Config/Tarefas do Coord incompletos |
+| Documentos | ✅ |
+| Notificações in-app | ✅ (email pendente) |
+| LGPD | 🟡 falta textos legais e exclusão real |
+| Deploy | 🟡 rodando; falta domínio/SSL/backup/monitoramento |
+| Testes automatizados | ❌ |

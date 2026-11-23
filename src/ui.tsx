@@ -481,7 +481,7 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
   );
 }
 
-export function Select({ value, onChange, options }: { value: string; onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void; options: string[] }) {
+export function Select({ value, onChange, options }: { value: string; onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void; options: Array<string | { value: string; label: string }> }) {
   return (
     <div style={{ position: "relative" }}>
       <select value={value} onChange={onChange} style={{
@@ -494,7 +494,9 @@ export function Select({ value, onChange, options }: { value: string; onChange?:
         appearance: "none",
         cursor: "pointer",
       }}>
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
+        {options.map(o => typeof o === "string"
+          ? <option key={o} value={o}>{o}</option>
+          : <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
       <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "var(--ink-4)" }}>
         <Ic.ChevronDown size={14} />

@@ -4,7 +4,7 @@ import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import type { Database } from "./lib/database.types";
 import { Ic } from "./icons";
 import { Btn, Input, Field } from "./ui";
-import { getInvite, aceitarConvite, registrarAceiteTermos, type InvitePublicData } from "./lib/data-live";
+import { getInvite, aceitarConvite, registrarAceiteTermos, clearLiveCache, type InvitePublicData } from "./lib/data-live";
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Revenda = Database["public"]["Tables"]["revendas"]["Row"];
@@ -123,9 +123,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const u = (await supabase.auth.getUser()).data.user;
         if (u) {
           const nome = (u.user_metadata?.nome as string) || (u.user_metadata?.full_name as string) || u.email!.split("@")[0];
+          // revenda_id vem do metadata do signUp (cadastro público de rep).
+          // Sem isso o rep ficaria sem revenda e nunca apareceria para o coord.
+          const revendaMeta = (u.user_metadata?.revenda_id as string | undefined) || null;
           const novo = {
             id: u.id, email: u.email!, nome,
             papel: "rep" as const, status: "pendente" as const,
+            revenda_id: revendaMeta,
           };
           const { error: insErr } = await supabase.from("profiles").insert(novo as never);
           if (insErr) {
@@ -133,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (!cached) setProfileError(`Erro ao criar perfil: ${insErr.message}`);
             return;
           }
+          if (revendaMeta) await registrarAceiteTermos(u.id).catch(() => {});
           // re-busca após criar
           inflightProfile = null;
           const created = await fetchProfileWithRetry(u.id);
@@ -247,7 +252,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email, password,
       options: {
-        data: { nome, papel: "rep" },
+        // papel NÃO vai no metadata (o banco força rep/pendente); revenda_id vai
+        // para o perfil ser criado corretamente mesmo com confirmação de email.
+        data: { nome, revenda_id },
         emailRedirectTo: window.location.origin,
       },
     });
@@ -296,6 +303,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     clearCachedProfile();
+    clearLiveCache(); // evita que o próximo usuário da aba veja dados do anterior
     await supabase.auth.signOut();
     setProfile(null);
   };
@@ -708,7 +716,7 @@ function AceitarConvite({ token, onCancel }: { token: string; onCancel: () => vo
     const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
       email: invite.email,
       password,
-      options: { data: { nome, papel: invite.papel } },
+      options: { data: { nome } },
     });
     if (signUpErr) {
       setBusy(false);
@@ -716,20 +724,9 @@ function AceitarConvite({ token, onCancel }: { token: string; onCancel: () => vo
       return;
     }
 
-    // 2) Garante que existe profile (caso o sistema esteja em flow sem trigger)
+    // 2) Aceita o convite (RPC security definer): cria/atualiza o profile
+    //    com papel e revenda do convite e ativa a conta.
     const userId = signUpData.user?.id;
-    if (userId) {
-      await supabase.from("profiles").insert({
-        id: userId,
-        email: invite.email,
-        nome,
-        papel: invite.papel,
-        status: "pendente",
-        revenda_id: invite.revenda_id,
-      } as never);
-    }
-
-    // 3) Aceita o convite (RPC)
     if (userId) {
       const { error: acErr } = await aceitarConvite(token, userId);
       if (acErr) {

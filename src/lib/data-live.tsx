@@ -564,5 +564,28 @@ export const PIPELINE_JURIDICO_DB = [
   { id: "recusou" as const,       label: "Recusou",             color: "var(--pj-recusou)" },
 ];
 
+// Converte valor digitado em formato brasileiro para número.
+// "48.000" → 48000 · "1.500,50" → 1500.5 · "R$ 2.000" → 2000 · "1500.5" → 1500.5
+export function parseBRL(v: string | null | undefined): number {
+  const s = (v ?? "").replace(/[^\d.,]/g, "");
+  if (!s) return 0;
+  let norm: string;
+  if (s.includes(",")) {
+    norm = s.replace(/\./g, "").replace(",", ".");
+  } else if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
+    norm = s.replace(/\./g, "");           // só separador de milhar
+  } else {
+    norm = s;                              // decimal com ponto ou inteiro
+  }
+  const n = Number(norm);
+  return Number.isFinite(n) ? n : 0;
+}
+
+// "2026-11-23" (coluna date) → Date local, sem o deslocamento de fuso do parse UTC
+export function parseDateOnly(d: string): Date {
+  const [y, m, day] = d.slice(0, 10).split("-").map(Number);
+  return new Date(y, (m || 1) - 1, day || 1);
+}
+
 export const fmtBRL = (n: number) =>
   "R$ " + Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });

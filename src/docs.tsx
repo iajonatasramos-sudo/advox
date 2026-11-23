@@ -78,6 +78,7 @@ export function DocumentosLista({ parent }: { parent: { kind: "lead" | "caso"; i
         await supabase.storage.from(BUCKET).remove([storagePath]);
         throw dbErr;
       }
+      load();
     } catch (e2) {
       setError(e2 instanceof Error ? e2.message : String(e2));
     }
@@ -87,15 +88,22 @@ export function DocumentosLista({ parent }: { parent: { kind: "lead" | "caso"; i
 
   const download = async (doc: DocRow) => {
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(doc.storage_path, 60);
-    if (error || !data?.signedUrl) { alert("Erro: " + (error?.message ?? "URL inválida")); return; }
+    if (error || !data?.signedUrl) { setError("Não foi possível baixar: " + (error?.message ?? "URL inválida")); return; }
     window.open(data.signedUrl, "_blank");
   };
 
   const remove = async (doc: DocRow) => {
     if (!window.confirm(`Excluir o documento "${doc.nome}"?`)) return;
-    await supabase.storage.from(BUCKET).remove([doc.storage_path]);
-    await supabase.from("documentos").delete().eq("id", doc.id);
+    setError(null);
+    // Remove o registro primeiro: se falhar, o arquivo continua íntegro
+    const { data: del, error: delErr } = await supabase.from("documentos").delete().eq("id", doc.id).select("id");
+    if (delErr || !del?.length) { setError(delErr?.message ?? "Sem permissão para excluir este documento."); return; }
+    const { error: stErr } = await supabase.storage.from(BUCKET).remove([doc.storage_path]);
+    if (stErr) console.error("[Advox] arquivo órfão no storage", doc.storage_path, stErr);
+    load();
   };
+
+  const canDelete = (doc: DocRow) => doc.uploaded_by === profile?.id || profile?.papel === "admin";
 
   const totalSize = (docs ?? []).reduce((s, d) => s + (d.tamanho ?? 0), 0);
 
@@ -136,7 +144,7 @@ export function DocumentosLista({ parent }: { parent: { kind: "lead" | "caso"; i
               </div>
             </div>
             <Btn variant="ghost" size="sm" icon={<Ic.Download size={12} />} onClick={() => download(d)}>Baixar</Btn>
-            <Btn variant="ghost" size="sm" icon={<Ic.Trash size={12} />} onClick={() => remove(d)}>Excluir</Btn>
+            {canDelete(d) && <Btn variant="ghost" size="sm" icon={<Ic.Trash size={12} />} onClick={() => remove(d)}>Excluir</Btn>}
           </div>
         ))
       )}

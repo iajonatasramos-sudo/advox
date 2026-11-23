@@ -11,7 +11,7 @@ import {
 } from "./admin";
 import { PerfilScreen, NotifPanel, RepOnboarding, ErrorScreen } from "./shared";
 import {
-  USERS, PIPELINE_COMERCIAL, PIPELINE_JURIDICO,
+  PIPELINE_COMERCIAL, PIPELINE_JURIDICO,
   type Persona, type Representante, type User as MockUser,
 } from "./data";
 import { useLiveNotificacoes, useRevendaInfo, useApplyRevendaTheme, type UiLead as Lead, type UiCaso as Caso } from "./lib/data-live";
@@ -99,7 +99,7 @@ function AppInner({ profile }: { profile: Profile }) {
     nome: profile.nome,
     papel: profile.papel === "advogado" ? "Advogada" : profile.papel === "coord" ? "Coordenador da Revenda" : profile.papel === "admin" ? "Administrador" : "Representante",
     email: profile.email,
-    revenda: profile.revenda_id ? (USERS[persona].revenda ?? "—") : undefined,
+    revenda: profile.revenda_id ? (revendaInfo?.nome ?? "—") : undefined,
     oab: profile.oab ?? undefined,
     uf: profile.uf ?? "—",
     whats: profile.whats ?? "—",
@@ -349,6 +349,7 @@ type SidebarProps = {
 };
 
 function Sidebar({ persona, route, setRoute, isMobile, drawerOpen }: SidebarProps) {
+  const { signOut } = useAuth();
   const items = NAV[persona];
   const labels: Record<Persona, string> = { rep: "Representante", coord: "Coordenador", adv: "Advogado", admin: "Administrador" };
   return (
@@ -416,16 +417,13 @@ function Sidebar({ persona, route, setRoute, isMobile, drawerOpen }: SidebarProp
       </div>
 
       <div style={{ marginTop: "auto", padding: "12px 14px", borderTop: "1px solid var(--line)" }}>
-        <button style={{
+        <button onClick={signOut} style={{
           display: "inline-flex", alignItems: "center", gap: 7,
           background: "transparent", border: 0,
           color: "var(--ink-3)", fontSize: 12, cursor: "pointer", padding: "4px 0",
         }}>
           <Ic.Logout size={13} /> Sair
         </button>
-        <div style={{ fontSize: 10.5, color: "var(--ink-4)", marginTop: 6, lineHeight: 1.5 }}>
-          Advox v2.4.1 — Use o seletor de persona acima para alternar entre fluxos.
-        </div>
       </div>
     </aside>
   );

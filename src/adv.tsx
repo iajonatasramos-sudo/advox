@@ -8,7 +8,7 @@ import { useAuth } from "./auth";
 import { supabase } from "./lib/supabase";
 import type { CasoStatus } from "./lib/database.types";
 import {
-  useLiveCasos, fmtBRL, PIPELINE_JURIDICO_DB, updateCaso,
+  useLiveCasos, fmtBRL, PIPELINE_JURIDICO_DB, updateCaso, parseDateOnly,
   type UiCaso,
 } from "./lib/data-live";
 import { DocumentosLista } from "./docs";
@@ -346,8 +346,10 @@ function CasoNotas({ casoId }: { casoId: string }) {
 
   const submit = async () => {
     if (!novo.trim() || !profile?.id) return;
-    await supabase.from("notas").insert({ caso_id: casoId, autor_id: profile.id, texto: novo.trim(), tipo: "nota", interno } as never);
+    const { error } = await supabase.from("notas").insert({ caso_id: casoId, autor_id: profile.id, texto: novo.trim(), tipo: "nota", interno } as never);
+    if (error) { window.alert("Não foi possível salvar a nota: " + error.message); return; }
     setNovo("");
+    load();
   };
 
   return (
@@ -425,8 +427,8 @@ export function AdvPrazos() {
                   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                   flexShrink: 0,
                 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700 }} className="mono">{new Date(p.data).getDate()}</span>
-                  <span style={{ fontSize: 9, textTransform: "uppercase" }}>{["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"][new Date(p.data).getMonth()]}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700 }} className="mono">{parseDateOnly(p.data).getDate()}</span>
+                  <span style={{ fontSize: 9, textTransform: "uppercase" }}>{["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"][parseDateOnly(p.data).getMonth()]}</span>
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 500 }}>{p.tipo}</div>
