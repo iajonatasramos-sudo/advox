@@ -132,12 +132,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             revenda_id: revendaMeta,
           };
           const { error: insErr } = await supabase.from("profiles").insert(novo as never);
-          if (insErr) {
+          // 23505 = o profile foi criado em paralelo (ex.: aceitar_convite logo
+          // após o signUp ganhou a corrida). Não é erro: só re-busca abaixo.
+          if (insErr && insErr.code !== "23505") {
             console.error("[Advox] loadProfile insert error", insErr);
             if (!cached) setProfileError(`Erro ao criar perfil: ${insErr.message}`);
             return;
           }
-          if (revendaMeta) await registrarAceiteTermos(u.id).catch(() => {});
+          if (insErr) console.log("[Advox] loadProfile: profile já criado em paralelo, re-buscando");
+          else if (revendaMeta) await registrarAceiteTermos(u.id).catch(() => {});
           // re-busca após criar
           inflightProfile = null;
           const created = await fetchProfileWithRetry(u.id);
