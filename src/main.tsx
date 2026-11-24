@@ -6,6 +6,9 @@ import { DataProvider } from "./store";
 import { AuthProvider } from "./auth";
 import { ErrorBoundary } from "./error-boundary";
 import { supabase } from "./lib/supabase";
+import { iniciarTema } from "./tema";
+
+iniciarTema();
 
 /**
  * Vínculo com a extensão AdvoxChat: o botão "Painel AdvoxChat" abre

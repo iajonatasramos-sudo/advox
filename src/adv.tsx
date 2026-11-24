@@ -54,13 +54,13 @@ export function AdvDashboard({ onOpenCaso }: { onOpenCaso: (c: UiCaso) => void }
         <div style={{
           display: "flex", alignItems: "center", gap: 12,
           padding: "12px 16px",
-          background: "linear-gradient(180deg, var(--rose-soft), oklch(0.96 0.02 25))",
+          background: "linear-gradient(180deg, var(--rose-soft), color-mix(in oklch, var(--rose-soft) 70%, var(--surface)))",
           border: "1px solid oklch(0.85 0.05 25)",
           borderRadius: 6,
         }}>
           <span style={{
             width: 32, height: 32, borderRadius: 6,
-            background: "oklch(0.93 0.06 25)", color: "var(--rose)",
+            background: "var(--rose-border)", color: "var(--rose)",
             display: "inline-flex", alignItems: "center", justifyContent: "center",
           }}><Ic.Warn size={16} /></span>
           <div style={{ flex: 1 }}>
@@ -368,7 +368,7 @@ function CasoNotas({ casoId }: { casoId: string }) {
         {notas === null ? <div style={{ padding: 20, textAlign: "center", color: "var(--ink-3)", fontSize: 12.5 }}>Carregando…</div>
           : notas.length === 0 ? <Empty icon={<Ic.Clock size={18} />} title="Sem notas ainda" />
           : notas.map((n, i) => (
-            <div key={n.id} style={{ display: "flex", gap: 12, padding: "12px 14px", borderBottom: i < notas.length - 1 ? "1px solid var(--line)" : 0, background: n.interno ? "oklch(0.97 0.03 80 / 0.5)" : "transparent" }}>
+            <div key={n.id} style={{ display: "flex", gap: 12, padding: "12px 14px", borderBottom: i < notas.length - 1 ? "1px solid var(--line)" : 0, background: n.interno ? "color-mix(in oklch, var(--amber-soft) 60%, transparent)" : "transparent" }}>
               <span style={{ width: 22, height: 22, borderRadius: 99, background: n.interno ? "var(--gold-soft)" : "var(--surface-3)", border: "1px solid var(--line)", display: "inline-flex", alignItems: "center", justifyContent: "center", color: n.interno ? "var(--gold-deep)" : "var(--ink-2)" }}>
                 <Ic.Pin size={11} />
               </span>

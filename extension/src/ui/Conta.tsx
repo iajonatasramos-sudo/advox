@@ -128,7 +128,10 @@ export function LoginModal({ aviso }: { aviso?: string | null }) {
         }}
       >
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h3 className="inline-flex items-center gap-2 text-[15px] font-bold"><Logo tamanho={22} /> Entrar no Advox</h3>
+          <h3 className="flex min-w-0 flex-col gap-1 text-[13px] font-bold text-text-2">
+            <img src={chrome.runtime.getURL('icons/advox-logo.png')} alt="Advox Telecom" draggable={false} className="h-7 w-auto self-start object-contain" />
+            Entrar no AdvoxChat
+          </h3>
           <button type="button" onClick={fechar} className="flex-shrink-0 rounded-md border border-border-strong px-2.5 py-1 text-[12px] font-semibold text-text-2 transition hover:bg-surface-2">Fechar</button>
         </div>
         <div className="space-y-3 p-4">

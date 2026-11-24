@@ -129,7 +129,7 @@ function Gaveta() {
         {aba === 'cliente' ? <ContatoView /> : <MensagensView />}
       </div>
       <div className="flex w-[266px] items-center justify-between rounded-lg border border-border bg-surface px-3 py-1.5 shadow-sm">
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-muted"><Zap size={12} className="text-brand" /> AdvoxChat</span>
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-muted"><Logo tamanho={14} /> AdvoxChat</span>
         <IndicadorWpp />
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { AparenciaSection } from "./tema";
 import React, { useEffect, useState } from "react";
 import { Ic } from "./icons";
 import {
@@ -73,6 +74,7 @@ export function PerfilScreen({ user }: { user: User }) {
         { id: "info", label: "Informações", icon: <Ic.User size={13} /> },
         { id: "seguranca", label: "Segurança", icon: <Ic.Lock size={13} /> },
         { id: "lgpd", label: "Privacidade LGPD", icon: <Ic.Doc size={13} /> },
+        { id: "aparencia", label: "Aparência", icon: <Ic.Sparkles size={13} /> },
       ]} />
 
       {msg && (
@@ -105,6 +107,8 @@ export function PerfilScreen({ user }: { user: User }) {
       {tab === "seguranca" && <SegurancaTab />}
 
       {tab === "lgpd" && <LGPDTab signOut={signOut} />}
+
+      {tab === "aparencia" && <AparenciaSection />}
     </div>
   );
 }
@@ -309,7 +313,7 @@ export function NotifPanel({ open, onClose }: { open: boolean; onClose: () => vo
               style={{
                 display: "flex", gap: 10, padding: "11px 14px",
                 borderBottom: i < items.length - 1 ? "1px solid var(--line)" : 0,
-                background: n.lida ? "transparent" : "oklch(0.97 0.02 240)",
+                background: n.lida ? "transparent" : "var(--navy-soft)",
                 cursor: "pointer",
               }}>
               <span style={{ width: 26, height: 26, borderRadius: 5, background: "var(--surface-3)", color: "var(--ink-2)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>

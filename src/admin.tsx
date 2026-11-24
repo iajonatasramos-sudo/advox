@@ -14,6 +14,7 @@ import type { ContaStatus } from "./lib/database.types";
 import { useLiveLeads, useLiveCasos, useLiveAuditoria, readLiveCache, writeLiveCache, rotuloPapel, rpcEquipe, type UiLead, type UiCaso } from "./lib/data-live";
 import { ConvidarModal } from "./invite-modal";
 import { BrandingModal } from "./branding-modal";
+import { AparenciaSection } from "./tema";
 
 /* ===== Helpers de agregação para o Dashboard ===== */
 function startOfPeriodo(p: string): Date {
@@ -1191,6 +1192,7 @@ export function AdminConfig() {
         <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {([
             ["geral", "Geral", <Ic.Settings size={14} />],
+            ["aparencia", "Aparência", <Ic.Sparkles size={14} />],
             ["pipeline-c", "Pipeline Comercial", <Ic.Pipeline size={14} />],
             ["pipeline-j", "Pipeline Jurídico", <Ic.Scale size={14} />],
             ["emails", "Templates de Email", <Ic.Mail size={14} />],
@@ -1210,6 +1212,7 @@ export function AdminConfig() {
         </nav>
 
         <div>
+          {sub === "aparencia" && <AparenciaSection />}
           {sub === "geral" && (
             <Section title="Geral">
               <div className="grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>

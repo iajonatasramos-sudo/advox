@@ -506,3 +506,14 @@ export function Select({ value, onChange, options }: { value: string; onChange?:
     </div>
   );
 }
+
+/** Logo completo do Advox: versão padrão no White; no Grey/Dark, a versão
+ *  com "ADVOX" em cinza-claro (troca via CSS, ver .logo-claro/.logo-escuro). */
+export function LogoAdvox({ style }: { style?: React.CSSProperties }) {
+  return (
+    <>
+      <img className="logo-claro" src="/brand/advox-logo.png" alt="Advox Telecom" style={style} />
+      <img className="logo-escuro" src="/brand/advox-logo-escuro.png" alt="Advox Telecom" style={style} />
+    </>
+  );
+}

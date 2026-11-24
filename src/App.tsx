@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Ic } from "./icons";
-import { Avatar, Badge, DesbloquearTopbar, Input, useIsMobile } from "./ui";
+import { Avatar, Badge, DesbloquearTopbar, Input, LogoAdvox, useIsMobile } from "./ui";
 import { ModalDesbloquear } from "./modal";
 import { RepDashboard, RepLeadDetail, RepTarefas, RepCasos } from "./rep";
 import { CoordDashboard, CoordLeads, CoordCasos, CoordTarefas } from "./coord";
@@ -340,10 +340,10 @@ function Topbar({ user, persona, titulo, revendaInfo, onOpenNotif, onOpenPerfil,
 }
 
 function Wordmark({ compact, subtitulo }: { compact?: boolean; subtitulo?: string }) {
-  if (compact) return <img src="/brand/advox-logo.png" alt="Advox Telecom" style={{ height: 26, width: "auto", display: "block", flexShrink: 0 }} />;
+  if (compact) return <LogoAdvox style={{ height: 26, width: "auto", flexShrink: 0 }} />;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-      <img src="/brand/advox-logo.png" alt="Advox Telecom" style={{ height: 42, width: "auto", maxWidth: 200, objectFit: "contain", objectPosition: "left center", display: "block" }} />
+      <LogoAdvox style={{ height: 42, width: "auto", maxWidth: 200, objectFit: "contain", objectPosition: "left center" }} />
       {subtitulo && subtitulo !== "CRM Telecom" && (
         <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 190 }}>
           {subtitulo}

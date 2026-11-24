@@ -3,7 +3,7 @@ import type { Session, User as AuthUser } from "@supabase/supabase-js";
 import { supabase, isSupabaseConfigured, veioDoLinkDeRecuperacao } from "./lib/supabase";
 import type { Database } from "./lib/database.types";
 import { Ic } from "./icons";
-import { Btn, Input, Field } from "./ui";
+import { Btn, Input, Field, LogoAdvox } from "./ui";
 import { getInvite, aceitarConvite, registrarAceiteTermos, clearLiveCache, rotuloPapel, type InvitePublicData } from "./lib/data-live";
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -375,7 +375,7 @@ function humanizeAuthError(msg: string): string {
  * SCREENS
  * ================================================================== */
 
-const PAGE_BG = "linear-gradient(180deg, oklch(0.985 0.003 240), oklch(0.95 0.01 250))";
+const PAGE_BG = "linear-gradient(180deg, var(--bg), var(--surface-3))";
 
 function AuthShell({ children, title, subtitle }: { children: React.ReactNode; title: string; subtitle?: string }) {
   return (
@@ -394,7 +394,7 @@ function AuthShell({ children, title, subtitle }: { children: React.ReactNode; t
         padding: "28px 28px 24px",
       }}>
         <div style={{ marginBottom: 22 }}>
-          <img src="/brand/advox-logo.png" alt="Advox Telecom" style={{ height: 44, width: "auto", maxWidth: "100%", display: "block" }} />
+          <LogoAdvox style={{ height: 44, width: "auto", maxWidth: "100%" }} />
           <div style={{ fontSize: 11, color: "var(--ink-4)", marginTop: 6 }}>CRM Telecom + Jurídico</div>
         </div>
 
