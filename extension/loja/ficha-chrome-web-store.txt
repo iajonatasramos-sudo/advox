@@ -1,0 +1,95 @@
+FICHA DA CHROME WEB STORE — AdvoxChat
+(copiar e colar no painel: chrome.google.com/webstore/devconsole)
+
+======================================================================
+ABA "STORE LISTING" (Ficha da loja)
+======================================================================
+
+Nome (vem do manifest):
+AdvoxChat — Advox no WhatsApp
+
+Resumo (até 132 caracteres — vem do manifest):
+CRM do representante Advox dentro do WhatsApp Web: lead da conversa, anotações, atividades e indicação ao jurídico.
+
+Descrição:
+A AdvoxChat leva o CRM do Advox para dentro do WhatsApp Web. Enquanto conversa com o cliente, o consultor vê e atualiza o lead daquele número sem trocar de janela.
+
+O que dá para fazer:
+• Ver o lead da conversa aberta (empresa, etapa, valor, operadora) ou cadastrar um novo com um clique.
+• Registrar anotações e o histórico de contatos do cliente.
+• Agendar ligações, visitas, reuniões e retornos na Minha agenda, com visão por dia, semana e mês.
+• Usar mensagens rápidas com atalho "/" e organizá-las por categoria, inclusive mensagens compartilhadas pela equipe.
+• Separar conversas em pastas e etiquetas.
+• Indicar ao escritório jurídico o cliente preso em contrato abusivo ("Desbloquear cliente").
+• Abrir o painel completo do Advox já logado.
+
+Para quem é:
+Equipes comerciais das revendas parceiras da Advox Telecom (consultores, coordenadores, gerentes e proprietários). É preciso ter uma conta ativa no Advox; o acesso é o mesmo e-mail e senha do app.
+
+Privacidade:
+A extensão não lê nem guarda o conteúdo das suas conversas. Ela usa apenas o nome e o número do contato aberto para encontrar o lead, e só envia uma mensagem quando você escolhe uma mensagem rápida.
+
+A AdvoxChat é uma ferramenta independente da Advox Telecom e não é desenvolvida, mantida nem endossada pelo WhatsApp ou pela Meta.
+
+Categoria:
+Ferramentas de trabalho  (em inglês no painel: "Workflow & Planning" — se não houver, use "Productivity")
+
+Idioma:
+Português (Brasil)
+
+Ícone da loja (128×128):
+extension/public/icons/icon128.png
+
+Capturas de tela (1280×800):
+extension/loja/captura-1-agenda.png
+extension/loja/captura-2-notas.png
+extension/loja/captura-3-mensagens.png
+
+Site oficial:
+https://app.advoxtelecom.com.br
+
+E-mail de suporte:
+contato@advoxtelecom.com.br
+
+
+======================================================================
+ABA "PRIVACY" (Práticas de privacidade)
+======================================================================
+
+Finalidade única (Single purpose):
+Mostrar o CRM do Advox ao lado das conversas do WhatsApp Web, para o consultor consultar e atualizar o lead do cliente, registrar anotações e atividades e usar mensagens rápidas.
+
+Justificativa — storage:
+Guarda no navegador a sessão de login do usuário no Advox, para ele não precisar entrar de novo a cada vez que abre o WhatsApp Web.
+
+Justificativa — permissão de host https://web.whatsapp.com/*:
+É o único site onde a extensão funciona: ela mostra o painel do Advox ao lado da conversa e identifica o número do contato que está aberto para localizar o lead correspondente.
+
+Justificativa — permissão de host https://ubnceeshmwzgwarprbht.supabase.co/*:
+É o servidor do Advox (banco de dados e login). A extensão lê e grava ali os dados do CRM da conta do próprio usuário.
+
+Código remoto (Remote code):
+Não, não uso código remoto. (Todo o JavaScript, inclusive a biblioteca de integração com o WhatsApp Web, vai dentro do pacote.)
+
+Dados coletados — marcar:
+[x] Informações de identificação pessoal (nome, e-mail, telefone do contato da conversa)
+[x] Informações de autenticação (login e sessão)
+[x] Conteúdo do usuário (anotações, atividades e mensagens rápidas que o próprio usuário escreve)
+[ ] Informações de saúde, financeiras, localização, histórico da web, atividade do usuário — NÃO marcar
+
+Declarações (marcar as três):
+[x] Não vendo nem transfiro dados de usuários a terceiros fora dos casos de uso aprovados
+[x] Não uso nem transfiro dados de usuários para finalidades não relacionadas à função principal do item
+[x] Não uso nem transfiro dados de usuários para determinar crédito ou para fins de empréstimo
+
+URL da política de privacidade:
+https://app.advoxtelecom.com.br/privacidade
+
+
+======================================================================
+ABA "DISTRIBUTION" (Distribuição)
+======================================================================
+
+Visibilidade: Não listado (Unlisted) — só quem tem o link instala.
+Regiões: Todas (ou só Brasil).
+Preço: Gratuito.

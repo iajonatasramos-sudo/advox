@@ -15,6 +15,7 @@ import { Clientes } from "./clientes";
 import { PainelAdvoxChat } from "./advoxchat";
 import { PersonaSwitcher, FaixaImpersonacao } from "./persona-switcher";
 import { MeuTime, MinhasRevendas } from "./equipe";
+import { PoliticaPrivacidade } from "./privacidade";
 import {
   PIPELINE_COMERCIAL, PIPELINE_JURIDICO,
   type Persona, type Representante, type User as MockUser,
@@ -77,6 +78,9 @@ const NAV: Record<Persona, NavItem[]> = {
 
 export function App() {
   const { loading, session, profile, profileError, recuperandoSenha } = useAuth();
+
+  // Página pública (link exigido pela Chrome Web Store), com ou sem login.
+  if (window.location.pathname.replace(/\/$/, "") === "/privacidade") return <PoliticaPrivacidade />;
 
   // Veio do link "Esqueci minha senha": primeiro define a senha nova.
   if (recuperandoSenha && session) return <NovaSenha />;
