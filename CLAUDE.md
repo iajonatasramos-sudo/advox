@@ -74,6 +74,14 @@ supabase/
     0007_storage_docs.sql         Policies do bucket documentos
     0008_notificacoes.sql         Tabela + triggers que criam notificações automáticas
     0009_aceites_termos.sql       Tabela LGPD de aceites versionados
+    ...
+    0015_crm_base.sql             telefone/email/fidelidade/motivo de perda em leads; tipo em tarefas
+
+extension/          Extensão Chrome (MV3) para WhatsApp Web — projeto separado
+  src/page/wa-bridge.ts   roda na página (mundo MAIN) com @wppconnect/wa-js: conversa ativa, telefone (@lid)
+  src/content/            painel React em shadow DOM + Supabase direto (RLS) com sessão no chrome.storage
+  build: cd extension && npm install && npm run pacote  → dist/ (carregar sem compactação) + .zip
+  Lê VITE_SUPABASE_* do ../.env.local. Base: ~/dev/buildchat (ver 04-armadilhas.md de lá)
 
 Dockerfile          Multi-stage: node:20-alpine builda, nginx:alpine serve
 nginx.conf          Config do Nginx dentro do container (SPA + cache + gzip + security)

@@ -170,8 +170,27 @@ input:focus, textarea:focus, select:focus { outline: none; }
   .notif-panel { right: 8px !important; left: 8px !important; width: auto !important; top: 64px !important; }
 
   /* Tables become horizontally scrollable on mobile */
-  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table thead, table tbody { display: table; width: 100%; min-width: max-content; }
+  /* Tabela rola para o lado dentro do card. thead/tbody continuam no MESMO
+     table (anônimo), senão as colunas do cabeçalho desalinham do corpo. */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+  table th, table td { white-space: nowrap; }
+
+  /* Minha Agenda / Painel AdvoxChat / Clientes */
+  .agenda-mes-cab, .agenda-mes-grade { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; }
+  .agenda-mes-grade > div { min-height: 64px !important; padding: 3px !important; }
+  /* No mês, cada atividade vira só uma barrinha colorida; tocar no dia abre a lista. */
+  .agenda-mes-grade .tarefa-compacta { padding: 0 !important; height: 5px; border-width: 0 0 0 100px !important; border-radius: 3px !important; overflow: hidden; }
+  .agenda-mes-grade .tarefa-compacta > * { display: none !important; }
+  .notas-grid { grid-template-columns: 1fr !important; }
+  .notas-grid > aside { max-height: 240px; border-right: 0 !important; border-bottom: 1px solid var(--line); }
+  .notas-grid > section { padding: 14px !important; }
+  .clientes-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; padding: 10px 12px !important; gap: 6px !important; }
+  .clientes-kpis > button { padding: 8px 9px !important; }
+  .clientes-kpis > button > span:first-child { display: none !important; }
+  .clientes-kpis > button > span:last-child > span:first-child { font-size: 9px !important; letter-spacing: 0.04em !important; }
+  .seg-rola { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .seg-rola::-webkit-scrollbar { display: none; }
+  .seg-rola > button { flex-shrink: 0; white-space: nowrap; }
 
   /* Filter rows wrap on mobile */
   .filter-row { flex-wrap: wrap !important; }

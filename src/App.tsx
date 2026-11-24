@@ -10,6 +10,10 @@ import {
   AdminTodosLeads, AdminTodosCasos, AdminConfig, AdminRevendas,
 } from "./admin";
 import { PerfilScreen, NotifPanel } from "./shared";
+import { MinhaAgenda } from "./agenda";
+import { Clientes } from "./clientes";
+import { PainelAdvoxChat } from "./advoxchat";
+import { PersonaSwitcher, FaixaImpersonacao } from "./persona-switcher";
 import {
   PIPELINE_COMERCIAL, PIPELINE_JURIDICO,
   type Persona, type Representante, type User as MockUser,
@@ -35,15 +39,21 @@ type NavItem = {
 const NAV: Record<Persona, NavItem[]> = {
   rep: [
     { id: "dashboard",  label: "Painel",          icon: <Ic.Dashboard size={14} /> },
+    { id: "agenda",     label: "Minha Agenda",    icon: <Ic.Calendar size={14} /> },
+    { id: "clientes",   label: "Clientes",        icon: <Ic.Users size={14} /> },
     { id: "tarefas",    label: "Tarefas",         icon: <Ic.Check size={14} /> },
-    { id: "casos",      label: "Casos Jurídicos", icon: <Ic.Scale size={14} /> },
+    { id: "casos",      label: "Leads no Jurídico", icon: <Ic.Scale size={14} /> },
+    { id: "advoxchat",  label: "Painel AdvoxChat", icon: <Ic.Whats size={14} /> },
   ],
   coord: [
     { id: "dashboard", label: "Painel",            icon: <Ic.Dashboard size={14} /> },
+    { id: "agenda",    label: "Minha Agenda",      icon: <Ic.Calendar size={14} /> },
+    { id: "clientes",  label: "Clientes",          icon: <Ic.Briefcase size={14} /> },
     { id: "time",      label: "Meu Time",          icon: <Ic.Users size={14} /> },
     { id: "leads",     label: "Leads da Equipe",   icon: <Ic.Briefcase size={14} /> },
-    { id: "casos",     label: "Casos da Equipe",   icon: <Ic.Scale size={14} /> },
+    { id: "casos",     label: "Leads no Jurídico", icon: <Ic.Scale size={14} /> },
     { id: "tarefas",   label: "Tarefas da Equipe", icon: <Ic.Check size={14} /> },
+    { id: "advoxchat", label: "Painel AdvoxChat",  icon: <Ic.Whats size={14} /> },
   ],
   adv: [
     { id: "dashboard", label: "Painel",  icon: <Ic.Dashboard size={14} /> },
@@ -56,6 +66,7 @@ const NAV: Record<Persona, NavItem[]> = {
     { id: "advogados",      label: "Advogados",       icon: <Ic.Gavel size={14} /> },
     { id: "leads",          label: "Todos os Leads",  icon: <Ic.Briefcase size={14} /> },
     { id: "casos",          label: "Todos os Casos",  icon: <Ic.Scale size={14} /> },
+    { id: "advoxchat",      label: "Painel AdvoxChat", icon: <Ic.Whats size={14} /> },
     { id: "auditoria",      label: "Auditoria",       icon: <Ic.Audit size={14} /> },
     { id: "config",         label: "Configurações",   icon: <Ic.Settings size={14} /> },
   ],
@@ -82,7 +93,12 @@ export function App() {
 
 function AppInner({ profile }: { profile: Profile }) {
   const persona: Persona = PAPEL_TO_PERSONA[profile.papel];
-  const [route, setRoute] = useState("dashboard");
+  // A extensão abre o painel com ?painel=advoxchat&aba=… (ver main.tsx).
+  const [inicio] = useState(() => {
+    const q = new URLSearchParams(window.location.search);
+    return q.get("painel") === "advoxchat" ? { route: "advoxchat", aba: q.get("aba") ?? undefined } : null;
+  });
+  const [route, setRoute] = useState(inicio?.route ?? "dashboard");
   const [openLead, setOpenLead] = useState<Lead | null>(null);
   const [openCaso, setOpenCaso] = useState<Caso | null>(null);
   const [modal, setModal] = useState(false);
@@ -107,7 +123,15 @@ function AppInner({ profile }: { profile: Profile }) {
     whats: profile.whats ?? "—",
   };
 
-  useEffect(() => { setRoute("dashboard"); setOpenLead(null); setOpenCaso(null); setCoordFocusRep(undefined); }, [persona]);
+  const primeiraPersona = React.useRef(true);
+  useEffect(() => {
+    if (primeiraPersona.current) { primeiraPersona.current = false; return; }
+    setRoute("dashboard"); setOpenLead(null); setOpenCaso(null); setCoordFocusRep(undefined);
+  }, [persona]);
+  // Limpa ?painel=… da URL depois de usar (recarregar não volta para lá).
+  useEffect(() => {
+    if (inicio) window.history.replaceState(null, "", window.location.pathname);
+  }, [inicio]);
   useEffect(() => { if (!isMobile) setDrawerOpen(false); }, [isMobile]);
   useEffect(() => { setDrawerOpen(false); }, [route, persona, openLead, openCaso]);
 
@@ -117,12 +141,18 @@ function AppInner({ profile }: { profile: Profile }) {
 
     if (persona === "rep") {
       if (route === "dashboard")  return <RepDashboard onOpenLead={setOpenLead} onOpenDesbloq={() => setModal(true)} />;
+      if (route === "agenda")     return <MinhaAgenda onOpenLead={setOpenLead} />;
+      if (route === "clientes")   return <Clientes onOpenLead={setOpenLead} />;
+      if (route === "advoxchat")  return <PainelAdvoxChat onOpenLead={setOpenLead} abaInicial={inicio?.aba} />;
       if (route === "tarefas")    return <RepTarefas />;
       if (route === "casos")      return <RepCasos onOpenLead={setOpenLead} />;
       if (route === "perfil")     return <PerfilScreen user={user} />;
     }
     if (persona === "coord") {
       if (route === "dashboard") return <CoordDashboard onOpenLead={setOpenLead} />;
+      if (route === "agenda")    return <MinhaAgenda onOpenLead={setOpenLead} />;
+      if (route === "clientes")  return <Clientes onOpenLead={setOpenLead} />;
+      if (route === "advoxchat") return <PainelAdvoxChat onOpenLead={setOpenLead} abaInicial={inicio?.aba} />;
       if (route === "time")      return <CoordTime onOpenRep={(r) => { setCoordFocusRep(r.nome); setRoute("leads"); }} />;
       if (route === "leads")     return <CoordLeads onOpenLead={setOpenLead} focusRep={coordFocusRep} onClearFocus={() => setCoordFocusRep(undefined)} />;
       if (route === "casos")     return <CoordCasos onOpenLead={setOpenLead} />;
@@ -141,6 +171,7 @@ function AppInner({ profile }: { profile: Profile }) {
       if (route === "advogados")      return <AdminAdvogados />;
       if (route === "leads")          return <AdminTodosLeads onOpenLead={setOpenLead} />;
       if (route === "casos")          return <AdminTodosCasos onOpenCaso={setOpenCaso} />;
+      if (route === "advoxchat")      return <PainelAdvoxChat onOpenLead={setOpenLead} abaInicial={inicio?.aba} />;
       if (route === "auditoria")      return <AdminAuditoria />;
       if (route === "config")         return <AdminConfig />;
       if (route === "perfil")         return <PerfilScreen user={user} />;
@@ -168,6 +199,7 @@ function AppInner({ profile }: { profile: Profile }) {
       />
 
       <div style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
+        <FaixaImpersonacao />
         <Topbar
           user={user}
           persona={persona}
@@ -241,6 +273,7 @@ function Topbar({ user, persona, titulo, revendaInfo, onOpenNotif, onOpenPerfil,
       <div style={{ flex: 1 }} />
 
       <div className="topbar-actions" style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        <PersonaSwitcher />
         {onOpenDesbloq && (
           <button onClick={onOpenDesbloq} title="Cliente preso em contrato abusivo? Indique ao jurídico." style={{
             display: "inline-flex", alignItems: "center", gap: 7,

@@ -148,7 +148,7 @@ export function AdminDashboard() {
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Visão Geral</h1>
           <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>Panorama operacional do escritório e da rede de representantes</div>
         </div>
-        <div style={{ display: "inline-flex", background: "var(--surface-3)", border: "1px solid var(--line)", borderRadius: 5, padding: 2 }}>
+        <div className="seg-rola" style={{ display: "inline-flex", background: "var(--surface-3)", border: "1px solid var(--line)", borderRadius: 5, padding: 2 }}>
           {[["hoje","Hoje"],["semana","Semana"],["mes","Mês"]].map(([id, l]) => (
             <button key={id} onClick={() => setPeriodo(id)} style={{
               padding: "5px 11px", fontSize: 12, fontWeight: 500, border: 0,
@@ -476,8 +476,8 @@ export function AdminRepresentantes() {
         padding: "10px 12px", background: "var(--surface)",
         border: "1px solid var(--line)", borderRadius: 6,
       }}>
-        <Input icon={<Ic.Search size={13} />} placeholder="Buscar por nome, email, revenda, cidade" value={search} onChange={e=>setSearch(e.target.value)} style={{ minWidth: 320 }} />
-        <div style={{ display: "inline-flex", background: "var(--surface-3)", border: "1px solid var(--line)", borderRadius: 5, padding: 2 }}>
+        <Input icon={<Ic.Search size={13} />} placeholder="Buscar por nome, email, revenda, cidade" value={search} onChange={e=>setSearch(e.target.value)} style={{ minWidth: "min(320px, 100%)" }} />
+        <div className="seg-rola" style={{ display: "inline-flex", background: "var(--surface-3)", border: "1px solid var(--line)", borderRadius: 5, padding: 2 }}>
           {(["Todos","ativo","pendente","suspenso","recusado"] as const).map(s => (
             <button key={s} onClick={() => setF(s)} style={{
               padding: "4px 10px", fontSize: 12, fontWeight: 500, border: 0,
@@ -637,7 +637,7 @@ export function AdminRevendas() {
       </header>
 
       <div className="toolbar-row" style={{ display: "flex", gap: 8, alignItems: "center", padding: "10px 12px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6 }}>
-        <Input icon={<Ic.Search size={13} />} placeholder="Buscar por nome ou coordenador" value={search} onChange={e=>setSearch(e.target.value)} style={{ minWidth: 320 }} />
+        <Input icon={<Ic.Search size={13} />} placeholder="Buscar por nome ou coordenador" value={search} onChange={e=>setSearch(e.target.value)} style={{ minWidth: "min(320px, 100%)" }} />
       </div>
 
       {error && (
@@ -1042,7 +1042,7 @@ export function AdminTodosLeads({ onOpenLead }: { onOpenLead: (l: UiLead) => voi
         </div>
       </header>
       <div className="toolbar-row" style={{ display: "flex", gap: 8, padding: "10px 12px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6 }}>
-        <Input icon={<Ic.Search size={13} />} placeholder="Buscar lead" value={search} onChange={e=>setSearch(e.target.value)} style={{ minWidth: 320 }} />
+        <Input icon={<Ic.Search size={13} />} placeholder="Buscar lead" value={search} onChange={e=>setSearch(e.target.value)} style={{ minWidth: "min(320px, 100%)" }} />
         <Btn variant="ghost" size="sm" icon={<Ic.Download size={13} />} style={{ marginLeft: "auto" }}>Exportar</Btn>
       </div>
       {error && <div style={{ background: "var(--rose-soft)", border: "1px solid var(--rose-border)", color: "var(--rose)", padding: "10px 14px", borderRadius: 5, fontSize: 12.5 }}>{error}</div>}

@@ -373,7 +373,7 @@ export function CoordLeads({ onOpenLead, focusRep, onClearFocus }: {
         background: "var(--surface)", border: "1px solid var(--line)",
         borderRadius: 6,
       }}>
-        <div style={{ display: "inline-flex", background: "var(--surface-3)", border: "1px solid var(--line)", borderRadius: 5, padding: 2 }}>
+        <div className="seg-rola" style={{ display: "inline-flex", background: "var(--surface-3)", border: "1px solid var(--line)", borderRadius: 5, padding: 2 }}>
           {([["kanban", <Ic.Kanban size={13} />, "Kanban"], ["lista", <Ic.List size={13} />, "Lista"]] as const).map(([id, ic, l]) => (
             <button key={id} onClick={() => setView(id as "kanban" | "lista")} style={{
               display: "inline-flex", alignItems: "center", gap: 6,
@@ -420,7 +420,7 @@ export function CoordCasos({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) 
   return (
     <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
       <header>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Casos da Equipe</h1>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Leads no Jurídico</h1>
         <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
           {casos === null ? "Carregando…" : `${all.length} casos da sua revenda no escritório Advox`}
         </div>

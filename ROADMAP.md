@@ -61,6 +61,19 @@ _Última revisão: 23/11/2026 — varredura completa de código + testes de RLS 
 
 ---
 
+## 🧩 CRM fase 1 + extensão WhatsApp (24/11/2026)
+
+- [x] Migration `0015_crm_base.sql`: `leads.telefone` (normalizado com DDI), `email`, `fim_fidelidade`, `motivo_perda`; `tarefas.tipo`
+- [x] Popup do lead no kanban (funil, contato, próxima atividade, jurídico, anotações, arquivos) + "Abrir cadastro completo"
+- [x] Ligar/WhatsApp/E-mail funcionando e registrando no histórico; editar lead; motivo de perda obrigatório
+- [x] Atividades com tipo; urgência calculada pela data; selo de fidelidade (≤ 60 dias)
+- [x] Acabamento visual no estilo BuildClinic (DM Sans, menu lateral, topo com Desbloquear)
+- [x] Extensão `extension/` para WhatsApp Web (MV3, base BuildChat): lead da conversa pelo telefone, criar/vincular lead, mover etapa, anotação, agendar atividade, indicar ao jurídico, mensagens prontas
+- [ ] Extensão: login automático pelo app (precisa Edge Function que emita sessão própria — não reaproveitar o refresh token do site)
+- [ ] Extensão: publicar na Chrome Web Store (ícones, política de privacidade)
+
+---
+
 ## 🔒 Varredura 23/11/2026 — o que foi corrigido
 
 Testado com 67 cenários (32 ataques + 35 fluxos legítimos) aplicando todas as migrations num Postgres 17 local com shim do Supabase. **Antes da 0013: 23 ataques funcionavam e 9 fluxos legítimos falhavam. Depois: 67/67 OK.**
