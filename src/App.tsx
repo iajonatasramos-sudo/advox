@@ -145,37 +145,37 @@ function AppInner({ profile }: { profile: Profile }) {
   };
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "var(--bg)" }}>
-      {(persona === "rep" || persona === "coord") && <DesbloquearTopbar onOpen={() => setModal(true)} />}
-
-      <Topbar
-        user={user}
+    <div style={{
+      height: "100vh", background: "var(--bg)",
+      display: "grid", gridTemplateColumns: isMobile ? "1fr" : "240px 1fr",
+      position: "relative",
+    }}>
+      <div
+        className={`sidebar-overlay${drawerOpen ? " is-open" : ""}`}
+        onClick={() => setDrawerOpen(false)}
+      />
+      <Sidebar
         persona={persona}
-        revendaInfo={revendaInfo}
-        onOpenNotif={() => setShowNotif(true)}
-        onOpenPerfil={() => setRoute("perfil")}
-        onToggleDrawer={() => setDrawerOpen(o => !o)}
+        route={route}
+        setRoute={(r) => { setRoute(r); setOpenLead(null); setOpenCaso(null); }}
         isMobile={isMobile}
+        drawerOpen={drawerOpen}
+        revendaInfo={revendaInfo}
       />
 
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: isMobile ? "1fr" : "232px 1fr",
-        flex: 1, minHeight: 0,
-        position: "relative",
-      }}>
-        <div
-          className={`sidebar-overlay${drawerOpen ? " is-open" : ""}`}
-          onClick={() => setDrawerOpen(false)}
-        />
-        <Sidebar
+      <div style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
+        <Topbar
+          user={user}
           persona={persona}
-          route={route}
-          setRoute={(r) => { setRoute(r); setOpenLead(null); setOpenCaso(null); }}
+          titulo={openLead ? "Lead" : openCaso ? "Caso" : route === "perfil" ? "Meu perfil" : (NAV[persona].find(n => n.id === route)?.label ?? "")}
+          revendaInfo={revendaInfo}
+          onOpenNotif={() => setShowNotif(true)}
+          onOpenPerfil={() => setRoute("perfil")}
+          onOpenDesbloq={persona === "rep" || persona === "coord" ? () => setModal(true) : undefined}
+          onToggleDrawer={() => setDrawerOpen(o => !o)}
           isMobile={isMobile}
-          drawerOpen={drawerOpen}
         />
-        <main style={{ overflow: "auto", background: "var(--bg)" }}>
+        <main style={{ flex: 1, minHeight: 0, overflow: "auto", background: "var(--bg)" }}>
           {renderMain()}
         </main>
       </div>
@@ -189,6 +189,8 @@ function AppInner({ profile }: { profile: Profile }) {
 type TopbarProps = {
   user: MockUser;
   persona: Persona;
+  titulo: string;
+  onOpenDesbloq?: () => void;
   revendaInfo: { nome: string; logo_url: string | null } | null;
   onOpenNotif: () => void;
   onOpenPerfil: () => void;
@@ -203,7 +205,7 @@ const PERSONA_BADGE: Record<Persona, { label: string; icon: React.ReactNode }> =
   admin: { label: "Administrador",            icon: <Ic.Settings size={12} /> },
 };
 
-function Topbar({ user, persona, revendaInfo, onOpenNotif, onOpenPerfil, onToggleDrawer, isMobile }: TopbarProps) {
+function Topbar({ user, persona, titulo, revendaInfo, onOpenNotif, onOpenPerfil, onOpenDesbloq, onToggleDrawer, isMobile }: TopbarProps) {
   const { signOut, profile } = useAuth();
   const personaInfo = PERSONA_BADGE[persona];
   const { items: notifs } = useLiveNotificacoes(profile?.id);
@@ -211,7 +213,7 @@ function Topbar({ user, persona, revendaInfo, onOpenNotif, onOpenPerfil, onToggl
   return (
     <div className="topbar" style={{
       display: "flex", alignItems: "center", gap: 14,
-      padding: "10px 18px",
+      padding: "0 22px", minHeight: 62,
       background: "var(--surface)", borderBottom: "1px solid var(--line)",
       flexShrink: 0,
     }}>
@@ -221,55 +223,35 @@ function Topbar({ user, persona, revendaInfo, onOpenNotif, onOpenPerfil, onToggl
           aria-label="Abrir menu"
           style={{
             display: "inline-flex", alignItems: "center", justifyContent: "center",
-            background: "transparent", border: "1px solid var(--line)",
-            borderRadius: 5, padding: 6, cursor: "pointer",
+            background: "var(--surface)", border: "1px solid var(--line)",
+            borderRadius: 10, padding: 7, cursor: "pointer",
             color: "var(--ink-2)",
           }}
         >
           <Ic.List size={16} />
         </button>
       )}
-      <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
-        <Wordmark />
-        <span className="only-desktop">
-          <Badge bg="var(--surface-3)" border="var(--line)" color="var(--ink-3)" style={{ marginLeft: 2 }}>v2.4.1</Badge>
-        </span>
-      </div>
-
-      <div className="topbar-search" style={{ marginLeft: 12, flex: 1, maxWidth: 460 }}>
-        <Input full icon={<Ic.Search size={13} />} placeholder="Buscar leads, casos, clientes, documentos…" value="" onChange={()=>{}} />
-      </div>
-
-      {revendaInfo && (
-        <div className="only-desktop" style={{
-          display: "inline-flex", alignItems: "center", gap: 8,
-          padding: "4px 12px",
-          background: "var(--surface-3)", border: "1px solid var(--line)",
-          borderRadius: 6, minHeight: 32,
-          flexShrink: 0,
-        }} title={revendaInfo.nome}>
-          {revendaInfo.logo_url ? (
-            <img src={revendaInfo.logo_url} alt={revendaInfo.nome} style={{ height: 22, width: "auto", maxWidth: 110, objectFit: "contain" }} />
-          ) : (
-            <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {revendaInfo.nome}
-            </span>
-          )}
-        </div>
+      {isMobile ? <Wordmark compact /> : (
+        <h1 style={{ margin: 0, fontSize: 19, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ink)", whiteSpace: "nowrap" }}>{titulo}</h1>
       )}
+      <div style={{ flex: 1 }} />
 
-      <div className="topbar-actions" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-        <div className="only-desktop" style={{
-          display: "inline-flex", alignItems: "center", gap: 5,
-          padding: "4px 10px", fontSize: 11.5, fontWeight: 500,
-          background: "var(--surface-3)", color: "var(--ink-2)",
-          border: "1px solid var(--line)",
-          borderRadius: 6,
-        }}>{personaInfo.icon}{personaInfo.label}</div>
+      <div className="topbar-actions" style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        {onOpenDesbloq && (
+          <button onClick={onOpenDesbloq} title="Cliente preso em contrato abusivo? Indique ao jurídico." style={{
+            display: "inline-flex", alignItems: "center", gap: 7,
+            background: "var(--gold)", color: "var(--gold-ink)", border: 0,
+            padding: "9px 14px", borderRadius: 10, fontWeight: 600, fontSize: 12.5,
+            cursor: "pointer", whiteSpace: "nowrap",
+            boxShadow: "0 6px 16px -6px color-mix(in oklch, var(--gold) 60%, transparent)",
+          }}>
+            <Ic.Unlock size={14} /><span className="only-desktop">Desbloquear cliente</span>
+          </button>
+        )}
 
         <button onClick={onOpenNotif} className="topbar-icon-btn" style={{
-          background: "transparent", border: "1px solid var(--line)",
-          borderRadius: 5, padding: "6px 8px", position: "relative",
+          background: "var(--surface)", border: "1px solid var(--line)",
+          borderRadius: 10, padding: "8px 9px", position: "relative",
           color: "var(--ink-2)", cursor: "pointer", flexShrink: 0,
         }}>
           <Ic.Bell size={14} />
@@ -287,21 +269,21 @@ function Topbar({ user, persona, revendaInfo, onOpenNotif, onOpenPerfil, onToggl
 
         <button onClick={onOpenPerfil} className="topbar-user-btn" style={{
           display: "inline-flex", alignItems: "center", gap: 8,
-          background: "transparent", border: "1px solid var(--line)",
-          borderRadius: 5, padding: "4px 8px 4px 4px", cursor: "pointer",
+          background: "var(--surface)", border: "1px solid var(--line)",
+          borderRadius: 10, padding: "4px 10px 4px 4px", cursor: "pointer",
           flexShrink: 0,
         }}>
-          <Avatar name={user.nome} size={24} />
+          <Avatar name={user.nome} size={30} />
           <div className="only-desktop" style={{ textAlign: "left" }}>
-            <div style={{ fontSize: 12, fontWeight: 500 }}>{user.nome}</div>
-            <div style={{ fontSize: 10.5, color: "var(--ink-3)" }}>{user.papel}</div>
+            <div style={{ fontSize: 12.5, fontWeight: 600 }}>{user.nome}</div>
+            <div style={{ fontSize: 10.5, color: "var(--ink-3)" }}>{personaInfo.label}</div>
           </div>
           <span className="only-desktop"><Ic.ChevronDown size={12} color="var(--ink-4)" /></span>
         </button>
 
         <button onClick={signOut} className="topbar-icon-btn" title="Sair" style={{
-          background: "transparent", border: "1px solid var(--line)",
-          borderRadius: 5, padding: "6px 8px",
+          background: "var(--surface)", border: "1px solid var(--line)",
+          borderRadius: 10, padding: "8px 9px",
           color: "var(--ink-2)", cursor: "pointer", flexShrink: 0,
         }}>
           <Ic.Logout size={14} />
@@ -311,32 +293,38 @@ function Topbar({ user, persona, revendaInfo, onOpenNotif, onOpenPerfil, onToggl
   );
 }
 
-function Wordmark() {
+function Wordmark({ compact, subtitulo }: { compact?: boolean; subtitulo?: string }) {
   return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 10, minWidth: 0 }}>
       <span style={{
-        width: 26, height: 26, borderRadius: 5,
-        background: "var(--navy)", color: "var(--navy-ink)",
+        width: compact ? 30 : 34, height: compact ? 30 : 34, borderRadius: 10,
+        background: "linear-gradient(135deg, var(--navy), color-mix(in oklch, var(--navy) 70%, var(--gold)))",
+        color: "var(--navy-ink)",
         display: "inline-flex", alignItems: "center", justifyContent: "center",
-        position: "relative",
-        boxShadow: "inset 0 -1px 0 oklch(0.18 0.07 255)",
+        position: "relative", flexShrink: 0,
+        boxShadow: "0 6px 14px -6px color-mix(in oklch, var(--navy) 70%, transparent)",
       }}>
-        <Ic.Scale size={14} />
+        <Ic.Scale size={compact ? 15 : 17} />
         <span style={{
           position: "absolute", bottom: -2, right: -2,
-          width: 8, height: 8, borderRadius: 99,
-          background: "var(--gold)",
-          border: "1.5px solid var(--surface)",
+          width: 9, height: 9, borderRadius: 99,
+          background: "var(--gold)", border: "2px solid var(--surface)",
         }} />
       </span>
-      <span style={{ fontSize: 16, fontWeight: 600, letterSpacing: "-0.015em", color: "var(--ink)" }}>
-        Advox <span className="only-desktop" style={{ color: "var(--ink-3)", fontWeight: 400 }}>Telecom</span>
+      <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.15, minWidth: 0 }}>
+        <span style={{ fontSize: compact ? 15 : 16, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ink)" }}>Advox</span>
+        {!compact && (
+          <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 150 }}>
+            {subtitulo ?? "CRM Telecom"}
+          </span>
+        )}
       </span>
     </div>
   );
 }
 
 type SidebarProps = {
+  revendaInfo: { nome: string; logo_url: string | null } | null;
   persona: Persona;
   route: string;
   setRoute: (r: string) => void;
@@ -344,79 +332,68 @@ type SidebarProps = {
   drawerOpen: boolean;
 };
 
-function Sidebar({ persona, route, setRoute, isMobile, drawerOpen }: SidebarProps) {
+function Sidebar({ persona, route, setRoute, drawerOpen, revendaInfo }: SidebarProps) {
   const { signOut } = useAuth();
   const items = NAV[persona];
-  const labels: Record<Persona, string> = { rep: "Representante", coord: "Coordenador", adv: "Advogado", admin: "Administrador" };
+  const labels: Record<Persona, string> = { rep: "Vendas", coord: "Gestão da equipe", adv: "Jurídico", admin: "Administração" };
   return (
     <aside
       className={`sidebar-drawer${drawerOpen ? " is-open" : ""}`}
       style={{
         background: "var(--surface)",
         borderRight: "1px solid var(--line)",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "auto",
+        display: "flex", flexDirection: "column",
+        overflow: "auto", height: "100vh",
       }}>
-      <div style={{ padding: "12px 14px 8px", display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ fontSize: 10.5, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>
-          {labels[persona]}
-        </span>
-        <span style={{ height: 1, flex: 1, background: "var(--line)" }} />
+      <div style={{ padding: "14px 16px", minHeight: 62, display: "flex", alignItems: "center", borderBottom: "1px solid var(--line)" }}>
+        {revendaInfo?.logo_url ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <img src={revendaInfo.logo_url} alt={revendaInfo.nome} style={{ height: 30, maxWidth: 120, objectFit: "contain" }} />
+            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)" }}>Advox</span>
+          </div>
+        ) : <Wordmark subtitulo={revendaInfo?.nome ?? "CRM Telecom"} />}
       </div>
-      <nav style={{ padding: "2px 10px 12px", display: "flex", flexDirection: "column", gap: 1 }}>
+
+      <div style={{ padding: "18px 18px 6px", fontSize: 10.5, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.09em", fontWeight: 600 }}>
+        {labels[persona]}
+      </div>
+      <nav style={{ padding: "0 10px 12px", display: "flex", flexDirection: "column", gap: 2 }}>
         {items.map(it => {
           const active = route === it.id;
           return (
-            <button key={it.id} onClick={() => setRoute(it.id)} style={{
-              display: "flex", alignItems: "center", gap: 9,
-              padding: "7px 9px",
-              fontSize: 12.5, fontWeight: 500,
-              background: active ? "var(--surface-3)" : "transparent",
-              border: active ? "1px solid var(--line-2)" : "1px solid transparent",
-              color: active ? "var(--ink)" : "var(--ink-2)",
-              borderRadius: 5, cursor: "pointer", textAlign: "left",
-            }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.background = "var(--hover)"; }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}>
-              <span style={{ color: active ? "var(--ink)" : "var(--ink-3)" }}>{it.icon}</span>
+            <button key={it.id} onClick={() => setRoute(it.id)} className={active ? undefined : "nav-item"} style={{
+              position: "relative",
+              display: "flex", alignItems: "center", gap: 10,
+              padding: "9px 12px",
+              fontSize: 13.5, fontWeight: active ? 600 : 500,
+              background: active ? "var(--navy-soft)" : "transparent",
+              border: 0,
+              color: active ? "var(--navy)" : "var(--ink-2)",
+              borderRadius: 8, cursor: "pointer", textAlign: "left",
+            }}>
+              {active && <span style={{ position: "absolute", left: -10, top: 8, bottom: 8, width: 3, borderRadius: "0 3px 3px 0", background: "var(--navy)" }} />}
+              <span style={{ color: active ? "var(--navy)" : "var(--ink-3)", display: "inline-flex" }}>{it.icon}</span>
               <span style={{ flex: 1 }}>{it.label}</span>
               {it.badge && (
                 <span style={{
-                  fontSize: 10.5, fontWeight: 500,
-                  background: "var(--surface-3)", color: "var(--ink-3)",
-                  padding: "1px 6px", borderRadius: 99,
-                  border: "1px solid var(--line)",
+                  fontSize: 10.5, fontWeight: 600,
+                  background: active ? "var(--navy)" : "var(--surface-3)", color: active ? "var(--navy-ink)" : "var(--ink-3)",
+                  padding: "1px 7px", borderRadius: 99,
                 }}>{it.badge}</span>
-              )}
-              {it.sub && (
-                <span style={{ fontSize: 10, color: "var(--ink-4)" }}>{it.sub}</span>
               )}
             </button>
           );
         })}
       </nav>
 
-      <div style={{ padding: "12px 14px 8px", display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ fontSize: 10.5, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>
-          Pipeline {persona === "adv" ? "Jurídico" : "Comercial"}
+      <div style={{ marginTop: "auto", padding: "12px 16px", borderTop: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--ink-4)" }}>
+          <span style={{ width: 6, height: 6, borderRadius: 99, background: "var(--green)" }} /> Advox · online
         </span>
-        <span style={{ height: 1, flex: 1, background: "var(--line)" }} />
-      </div>
-      <div style={{ padding: "0 14px 14px", display: "flex", flexDirection: "column", gap: 4, fontSize: 11.5 }}>
-        {(persona === "adv" ? PIPELINE_JURIDICO.slice(0, 9) : PIPELINE_COMERCIAL).map(s => (
-          <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "2px 0" }}>
-            <span style={{ width: 6, height: 6, borderRadius: 99, background: s.color, flexShrink: 0 }} />
-            <span style={{ color: "var(--ink-2)" }}>{s.label}</span>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ marginTop: "auto", padding: "12px 14px", borderTop: "1px solid var(--line)" }}>
-        <button onClick={signOut} style={{
-          display: "inline-flex", alignItems: "center", gap: 7,
-          background: "transparent", border: 0,
-          color: "var(--ink-3)", fontSize: 12, cursor: "pointer", padding: "4px 0",
+        <button onClick={signOut} className="nav-item" style={{
+          display: "inline-flex", alignItems: "center", gap: 6,
+          background: "transparent", border: 0, borderRadius: 6,
+          color: "var(--ink-3)", fontSize: 12, cursor: "pointer", padding: "5px 8px",
         }}>
           <Ic.Logout size={13} /> Sair
         </button>

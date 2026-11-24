@@ -40,20 +40,20 @@ export function Btn({ children, variant = "default", size = "md", icon, iconRigh
     display: "inline-flex", alignItems: "center", gap: 6,
     border: "1px solid transparent",
     fontWeight: 500, fontSize: size === "sm" ? 12 : 13, lineHeight: 1,
-    padding: size === "sm" ? "6px 10px" : size === "lg" ? "10px 16px" : "8px 12px",
-    borderRadius: 6,
+    padding: size === "sm" ? "7px 11px" : size === "lg" ? "11px 18px" : "9px 14px",
+    borderRadius: 8,
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.5 : 1,
-    transition: "background 80ms ease, color 80ms ease, border-color 80ms ease, box-shadow 80ms ease",
+    transition: "background 120ms ease, color 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease",
     whiteSpace: "nowrap",
     userSelect: "none",
   };
   const variants: Record<BtnVariant, React.CSSProperties> = {
-    default:  { background: "var(--surface)", color: "var(--ink)", border: "1px solid var(--line-2)", boxShadow: "var(--shadow-sm)" },
+    default:  { background: "var(--surface)", color: "var(--ink)", border: "1px solid var(--line)", boxShadow: "var(--shadow-sm)" },
     primary:  { background: "var(--navy)", color: "var(--navy-ink)", border: "1px solid var(--navy-2)", boxShadow: "var(--shadow-sm)" },
     gold:     { background: "var(--gold)", color: "var(--gold-ink)", border: "1px solid var(--gold-2)", boxShadow: "var(--shadow-sm)" },
     ghost:    { background: "transparent", color: "var(--ink-2)", border: "1px solid transparent" },
-    soft:     { background: "var(--surface-3)", color: "var(--ink-2)", border: "1px solid var(--line)" },
+    soft:     { background: "var(--navy-soft)", color: "var(--navy)", border: "1px solid transparent" },
     danger:   { background: "var(--surface)", color: "var(--rose)", border: "1px solid oklch(0.85 0.05 25)" },
     link:     { background: "transparent", color: "var(--navy)", border: 0, padding: 0 },
   };
@@ -78,10 +78,10 @@ export function Badge({ children, dotColor, color = "var(--ink-2)", bg = "var(--
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 5,
       fontSize: 11, fontWeight: 500, lineHeight: 1,
-      padding: "3px 7px",
+      padding: "4px 8px",
       color, background: bg,
       border: `1px solid ${border}`,
-      borderRadius: 4,
+      borderRadius: 6,
       letterSpacing: "0.005em",
       ...style,
     }}>
@@ -104,11 +104,11 @@ export function StatusPill({ stage, pipeline = PIPELINE_COMERCIAL, size = "md" }
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 6,
       fontSize: size === "sm" ? 11 : 12, fontWeight: 500,
-      padding: size === "sm" ? "3px 7px" : "4px 9px",
-      color: "var(--ink)",
-      background: "var(--surface)",
-      border: "1px solid var(--line-2)",
-      borderRadius: 4,
+      padding: size === "sm" ? "3px 8px" : "4px 10px",
+      color: `color-mix(in oklch, ${s.color} 70%, black)`,
+      background: `color-mix(in oklch, ${s.color} 12%, var(--surface))`,
+      border: `1px solid color-mix(in oklch, ${s.color} 22%, var(--surface))`,
+      borderRadius: 99,
     }}>
       <span style={{ width: 6, height: 6, borderRadius: 99, background: s.color }} />
       {s.label}
@@ -160,16 +160,17 @@ export function KPI({ label, valor, delta, trend, icon }: KPIProps) {
     <div style={{
       background: "var(--surface)",
       border: "1px solid var(--line)",
-      borderRadius: 6,
-      padding: "14px 16px",
+      borderRadius: 12,
+      boxShadow: "var(--shadow-sm)",
+      padding: "16px 18px",
       display: "flex", flexDirection: "column", gap: 8,
       minHeight: 92,
     }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 11.5, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 500 }}>{label}</span>
-        {icon && <span style={{ color: "var(--ink-4)" }}>{icon}</span>}
+        <span style={{ fontSize: 11, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 600 }}>{label}</span>
+        {icon && <span style={{ width: 28, height: 28, borderRadius: 8, background: "var(--navy-soft)", color: "var(--navy)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{icon}</span>}
       </div>
-      <div style={{ fontSize: 26, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--ink)" }}>{valor}</div>
+      <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.025em", color: "var(--ink)" }}>{valor}</div>
       {delta && (
         <div style={{ fontSize: 11.5, color: trendColor, display: "inline-flex", alignItems: "center", gap: 4 }}>
           {trend === "up" && <Ic.ArrowUp size={11} />}
@@ -197,10 +198,10 @@ export function Input({ value, onChange, placeholder, icon, type = "text", size 
   return (
     <div className="ring-focus" style={{
       display: "inline-flex", alignItems: "center", gap: 7,
-      padding: size === "sm" ? "5px 9px" : "7px 10px",
-      border: "1px solid var(--line-2)",
+      padding: size === "sm" ? "6px 10px" : "8px 12px",
+      border: "1px solid var(--line)",
       background: "var(--surface)",
-      borderRadius: 5,
+      borderRadius: 8,
       minWidth: full ? "100%" : 240,
       width: full ? "100%" : undefined,
       ...style,
@@ -233,14 +234,15 @@ export function OperadoraTag({ op, size = "sm" }: { op: string; size?: "sm" | "m
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 5,
-      fontSize: size === "sm" ? 11 : 12,
-      fontWeight: 600,
-      letterSpacing: "0.01em",
-      padding: size === "sm" ? "2px 6px" : "3px 8px",
+      fontSize: size === "sm" ? 10.5 : 11.5,
+      fontWeight: 700,
+      letterSpacing: "0.05em",
+      textTransform: "uppercase",
+      padding: size === "sm" ? "3px 7px" : "4px 9px",
       color: OPERADORA_COLORS[op] || "var(--ink-2)",
-      background: "var(--surface-3)",
-      border: "1px solid var(--line)",
-      borderRadius: 4,
+      background: `color-mix(in oklch, ${OPERADORA_COLORS[op] || "var(--ink-3)"} 10%, var(--surface))`,
+      border: 0,
+      borderRadius: 6,
     }}>{op}</span>
   );
 }
@@ -258,17 +260,17 @@ export function Section({ title, subtitle, right, children, dense, noPad }: Sect
   return (
     <section style={{
       background: "var(--surface)", border: "1px solid var(--line)",
-      borderRadius: 6, overflow: "hidden",
+      borderRadius: 12, overflow: "hidden", boxShadow: "var(--shadow-sm)",
     }}>
       {title && (
         <header style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: dense ? "10px 14px" : "12px 16px",
+          padding: dense ? "11px 16px" : "14px 18px",
           borderBottom: "1px solid var(--line)",
-          background: "var(--surface-2)",
+          background: "var(--surface)",
         }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{title}</h3>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.005em" }}>{title}</h3>
             {subtitle && <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginTop: 2 }}>{subtitle}</div>}
           </div>
           {right}
@@ -371,7 +373,7 @@ export function Tabs({ tabs, active, onChange }: { tabs: Tab[]; active: string; 
           background: "transparent", border: 0,
           padding: "10px 14px",
           fontSize: 13, fontWeight: 500,
-          color: active === t.id ? "var(--ink)" : "var(--ink-3)",
+          color: active === t.id ? "var(--navy)" : "var(--ink-3)",
           borderBottom: active === t.id ? "2px solid var(--navy)" : "2px solid transparent",
           cursor: "pointer",
           marginBottom: -1,
@@ -384,7 +386,7 @@ export function Tabs({ tabs, active, onChange }: { tabs: Tab[]; active: string; 
             <span style={{
               fontSize: 11, color: "var(--ink-4)",
               background: "var(--surface-3)", border: "1px solid var(--line)",
-              padding: "1px 6px", borderRadius: 4, marginLeft: 2,
+              padding: "1px 7px", borderRadius: 99, marginLeft: 2,
             }}>{t.count}</span>
           )}
         </button>
@@ -486,9 +488,9 @@ export function Select({ value, onChange, options }: { value: string; onChange?:
     <div style={{ position: "relative" }}>
       <select value={value} onChange={onChange} style={{
         width: "100%",
-        padding: "7px 28px 7px 10px",
-        border: "1px solid var(--line-2)",
-        borderRadius: 5,
+        padding: "8px 30px 8px 12px",
+        border: "1px solid var(--line)",
+        borderRadius: 8,
         background: "var(--surface)",
         fontSize: 13, color: "var(--ink)",
         appearance: "none",

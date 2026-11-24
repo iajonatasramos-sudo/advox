@@ -72,7 +72,7 @@ export function RepDashboard({ onOpenLead, onOpenDesbloq }: { onOpenLead: (l: Ui
         display: "flex", alignItems: "center", gap: 10,
         padding: "10px 12px",
         background: "var(--surface)", border: "1px solid var(--line)",
-        borderRadius: 6,
+        borderRadius: 12, boxShadow: "var(--shadow-sm)",
       }}>
         <div style={{ display: "inline-flex", background: "var(--surface-3)", border: "1px solid var(--line)", borderRadius: 5, padding: 2 }}>
           {([["kanban", <Ic.Kanban size={13} />, "Kanban"], ["lista", <Ic.List size={13} />, "Lista"]] as const).map(([id, ic, l]) => (
@@ -161,23 +161,21 @@ export function RepKanban({ filter, onOpenLead, leads: leadsProp, onOpenDesbloq 
               setDropTarget(null);
             }}
             style={{
-              background: isTarget ? "var(--gold-soft)" : "var(--surface-2)",
-              border: `1px ${isTarget ? "dashed" : "solid"} ${isTarget ? "var(--gold-border)" : "var(--line)"}`,
-              borderRadius: 6,
+              background: isTarget ? "var(--navy-soft)" : "var(--surface-3)",
+              border: `1px ${isTarget ? "dashed" : "solid"} ${isTarget ? "var(--navy)" : "var(--line)"}`,
+              borderRadius: 12,
               display: "flex", flexDirection: "column",
               minHeight: 400, maxHeight: "calc(100vh - 280px)",
               transition: "background 100ms, border-color 100ms",
             }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: "1px solid var(--line)" }}>
-              <span style={{ width: 6, height: 6, borderRadius: 99, background: col.color }} />
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)" }}>{col.label}</span>
-              <span style={{ fontSize: 11, color: "var(--ink-4)", marginLeft: 2 }}>{items.length}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 12px 6px" }}>
+              <span style={{ width: 7, height: 7, borderRadius: 99, background: col.color }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-2)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{col.label}</span>
+              <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: "var(--ink-3)", background: "var(--surface)", border: "1px solid var(--line)", padding: "1px 8px", borderRadius: 99 }}>{items.length}</span>
             </div>
-            {items.length > 0 && (
-              <div style={{ padding: "6px 12px", fontSize: 11, color: "var(--ink-3)", borderBottom: "1px solid var(--line)" }}>
-                <span className="mono">{fmtBRL(total)}</span>
-              </div>
-            )}
+            <div style={{ padding: "0 12px 6px", fontSize: 11.5, color: "var(--ink-3)", minHeight: 18 }}>
+              {items.length > 0 && <span className="mono">{fmtBRL(total)}</span>}
+            </div>
             <div style={{ flex: 1, overflowY: "auto", padding: 8, display: "flex", flexDirection: "column", gap: 8 }}>
               {items.map(l => (
                 <LeadCard
@@ -218,22 +216,20 @@ function LeadCard({ lead, onClick, onDragStart, onDragEnd, isDragging }: {
       draggable={!!onDragStart}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className="grab"
+      className="grab card-hover"
       style={{
         background: "var(--surface)", border: "1px solid var(--line)",
-        borderRadius: 5, padding: "10px 11px",
-        display: "flex", flexDirection: "column", gap: 7,
+        borderRadius: 10, padding: "12px 12px",
+        display: "flex", flexDirection: "column", gap: 8,
+        boxShadow: "var(--shadow-sm)",
         cursor: onDragStart ? "grab" : "pointer",
-        transition: "border-color 80ms, box-shadow 80ms, opacity 100ms",
         opacity: isDragging ? 0.4 : 1,
-      }}
-      onMouseEnter={e=>{ const el = e.currentTarget; el.style.borderColor="var(--line-strong)"; el.style.boxShadow="var(--shadow-md)"; }}
-      onMouseLeave={e=>{ const el = e.currentTarget; el.style.borderColor="var(--line)"; el.style.boxShadow="none"; }}>
+      }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
         <span className="mono" style={{ fontSize: 10.5, color: "var(--ink-4)", letterSpacing: "0.02em" }}>{lead.telefone ? fmtTelefone(lead.telefone) : "sem WhatsApp"}</span>
         <OperadoraTag op={lead.operadora} />
       </div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", lineHeight: 1.3 }}>{lead.empresa}</div>
+      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", lineHeight: 1.3, letterSpacing: "-0.005em" }}>{lead.empresa}</div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <Avatar name={lead.contato} size={20} />
         <span style={{ fontSize: 11.5, color: "var(--ink-2)" }}>{lead.contato}</span>
@@ -258,10 +254,10 @@ function LeadCard({ lead, onClick, onDragStart, onDragEnd, isDragging }: {
       {lead.advox_caso_id && (
         <div style={{
           display: "inline-flex", alignItems: "center", gap: 6,
-          padding: "4px 7px",
+          padding: "4px 8px",
           background: "var(--gold-soft)",
           border: "1px solid var(--gold-border)",
-          borderRadius: 4, fontSize: 11, color: "var(--gold-deep)",
+          borderRadius: 6, fontSize: 11, color: "var(--gold-deep)",
           marginTop: 2,
         }}>
           <Ic.Scale size={11} /><span className="mono">{lead.advox_caso_id.slice(0, 8)}</span> · em análise
