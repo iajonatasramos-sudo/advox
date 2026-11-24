@@ -4,7 +4,7 @@ import { supabase, isSupabaseConfigured, veioDoLinkDeRecuperacao } from "./lib/s
 import type { Database } from "./lib/database.types";
 import { Ic } from "./icons";
 import { Btn, Input, Field } from "./ui";
-import { getInvite, aceitarConvite, registrarAceiteTermos, clearLiveCache, type InvitePublicData } from "./lib/data-live";
+import { getInvite, aceitarConvite, registrarAceiteTermos, clearLiveCache, rotuloPapel, type InvitePublicData } from "./lib/data-live";
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Revenda = Database["public"]["Tables"]["revendas"]["Row"];
@@ -626,7 +626,7 @@ function Cadastro({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <AuthShell title="Criar conta de Representante" subtitle="Vendedores de telecom — escolha sua revenda e aguarde a aprovação do coordenador.">
+    <AuthShell title="Criar conta de Consultor" subtitle="Consultores de telecom — escolha sua revenda e aguarde a aprovação do coordenador.">
       {err && <ErrorMsg>{err}</ErrorMsg>}
 
       <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -777,13 +777,13 @@ function AceitarConvite({ token, onCancel }: { token: string; onCancel: () => vo
   if (done) {
     return (
       <AuthShell title="Conta criada com sucesso!" subtitle="Você já pode entrar com seu email e senha.">
-        <SuccessMsg>Sua conta foi ativada como <strong>{invite.papel === "rep" ? "Representante" : invite.papel === "coord" ? "Coordenador" : invite.papel === "advogado" ? "Advogado" : "Administrador"}</strong>{invite.revenda_nome ? <> da revenda <strong>{invite.revenda_nome}</strong></> : null}.</SuccessMsg>
+        <SuccessMsg>Sua conta foi ativada como <strong>{rotuloPapel(invite.papel)}</strong>{invite.revenda_nome ? <> da revenda <strong>{invite.revenda_nome}</strong></> : null}.</SuccessMsg>
         <Btn variant="primary" onClick={() => { clearInviteFromUrl(); window.location.reload(); }} style={{ width: "100%", justifyContent: "center" }}>Entrar agora</Btn>
       </AuthShell>
     );
   }
 
-  const papelLabel = invite.papel === "rep" ? "Representante" : invite.papel === "coord" ? "Coordenador" : invite.papel === "advogado" ? "Advogado" : "Administrador";
+  const papelLabel = rotuloPapel(invite.papel);
 
   return (
     <AuthShell title="Você foi convidado" subtitle={`Crie sua senha para ativar sua conta como ${papelLabel}${invite.revenda_nome ? ` da ${invite.revenda_nome}` : ""}.`}>

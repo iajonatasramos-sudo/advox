@@ -432,7 +432,28 @@ export async function updateMyProfile(userId: string, patch: Partial<DbProfile>)
  * CONVITES
  * ================================================================== */
 
-export type Papel = "admin" | "coord" | "rep" | "advogado";
+export type Papel = "admin" | "proprietario" | "gerente" | "coord" | "rep" | "advogado";
+
+/** Nome da função na tela. 'coord' = Coordenador, 'rep' = Consultor. */
+export const ROTULO_PAPEL: Record<Papel, string> = {
+  admin: "Administrador", proprietario: "Proprietário", gerente: "Gerente",
+  coord: "Coordenador", rep: "Consultor", advogado: "Advogado",
+};
+export const rotuloPapel = (p: string | null | undefined) => (p && (ROTULO_PAPEL as Record<string, string>)[p]) || "—";
+/** Nível na hierarquia comercial (0 = fora dela). */
+export const rankPapel = (p: string | null | undefined) =>
+  p === "proprietario" ? 4 : p === "gerente" ? 3 : p === "coord" ? 2 : p === "rep" ? 1 : 0;
+/** Proprietário, gerente e coordenador: gerem um time. */
+export const ehGestor = (p: string | null | undefined) => rankPapel(p) >= 2;
+
+/** Resultado das funções de gestão da equipe (RPC). */
+export async function rpcEquipe(fn: "aprovar_membro" | "definir_superior" | "definir_funcao" | "alocar_revenda" | "definir_status_membro" | "criar_empresa", args: Record<string, unknown>) {
+  const { data, error } = await supabase.rpc(fn as never, args as never);
+  if (error) return { error: error.message };
+  const r = data as { error?: string } | null;
+  if (r?.error) return { error: r.error };
+  return { data: r as Record<string, unknown> | null };
+}
 
 export type ConviteRow = Database["public"]["Tables"]["convites"]["Row"] & {
   revenda?: { nome: string } | null;
@@ -442,6 +463,8 @@ export async function createConvite(input: {
   email: string;
   papel: Papel;
   revenda_id?: string | null;
+  empresa_id?: string | null;
+  superior_id?: string | null;
   invited_by: string;
   expira_dias?: number;
 }) {
@@ -453,6 +476,8 @@ export async function createConvite(input: {
       email: input.email.trim().toLowerCase(),
       papel: input.papel,
       revenda_id: input.revenda_id ?? null,
+      empresa_id: input.empresa_id ?? null,
+      superior_id: input.superior_id ?? null,
       invited_by: input.invited_by,
       expira_em: expira.toISOString(),
     } as never)

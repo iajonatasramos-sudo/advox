@@ -21,7 +21,7 @@ import { LoginModal, Logo } from './Conta';
 import { Toaster } from './toast';
 import { useSinal } from './sinal';
 
-const PAPEIS_OK = ['rep', 'coord', 'admin'];
+const PAPEIS_OK = ['rep', 'coord', 'gerente', 'proprietario', 'admin'];
 
 export function App({ topbar, header }: { topbar: HTMLElement; header: { get: () => HTMLElement | null; subscribe: (fn: (v: HTMLElement | null) => void) => () => void } }) {
   const [sessao, setSessao] = useState<Session | null | undefined>(undefined);
@@ -53,7 +53,7 @@ export function App({ topbar, header }: { topbar: HTMLElement; header: { get: ()
   }, [pronto]);
 
   const aviso = perfil && !pronto
-    ? perfil.status !== 'ativo' ? 'Sua conta ainda não está ativa no Advox. Peça a aprovação ao coordenador.' : 'A extensão é para representantes e coordenadores.'
+    ? perfil.status !== 'ativo' ? 'Sua conta ainda não está ativa no Advox. Peça a aprovação ao coordenador.' : 'A extensão é para a equipe comercial (consultores, coordenadores, gerentes e proprietários).'
     : null;
 
   if (sessao === undefined || (sessao && perfil === undefined)) return null;

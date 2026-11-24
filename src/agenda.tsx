@@ -12,6 +12,7 @@ import { sbx } from "./lib/db-extra";
 import {
   useLiveLeads, useLiveTarefas, toggleTarefa, TIPOS_ATIVIDADE,
   type UiLead, type UiTarefa,
+  ehGestor,
 } from "./lib/data-live";
 import type { TipoAtividade } from "./lib/database.types";
 
@@ -69,14 +70,14 @@ export function MinhaAgenda({ onOpenLead }: { onOpenLead: (l: UiLead) => void })
 /** Tarefas do usuário (coord pode ver as do time). */
 function useMinhasTarefas(escopo: "eu" | "time") {
   const { profile } = useAuth();
-  const ehCoord = profile?.papel === "coord";
-  const filtro = escopo === "time" && ehCoord ? { revendaId: profile?.revenda_id ?? undefined } : { autorId: profile?.id };
+  const ehCoord = ehGestor(profile?.papel);
+  const filtro = escopo === "time" && ehCoord ? {} : { autorId: profile?.id };
   return useLiveTarefas(filtro);
 }
 
 export function AgendaCalendario({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) {
   const { profile } = useAuth();
-  const ehCoord = profile?.papel === "coord";
+  const ehCoord = ehGestor(profile?.papel);
   const [escopo, setEscopo] = useState<"eu" | "time">("eu");
   const { tarefas, refresh } = useMinhasTarefas(escopo);
   // No celular a semana não cabe (7 colunas): abre no Dia.
@@ -330,8 +331,8 @@ function LinhaTarefa({ t, onAbrir, onMudou, mostrarData }: { t: UiTarefa; onAbri
 
 function AtividadeModal({ dia, tarefa, onClose, onOpenLead }: { dia?: Date; tarefa?: UiTarefa; onClose: () => void; onOpenLead?: () => void }) {
   const { profile } = useAuth();
-  const ehCoord = profile?.papel === "coord";
-  const { leads } = useLiveLeads(ehCoord ? { revendaId: profile?.revenda_id ?? undefined } : { repId: profile?.id });
+  const ehCoord = ehGestor(profile?.papel);
+  const { leads } = useLiveLeads(ehCoord ? {} : { repId: profile?.id });
   const ini = tarefa?.quando ? new Date(tarefa.quando) : dia ?? new Date();
   const [descricao, setDescricao] = useState(tarefa?.descricao ?? "");
   const [tipo, setTipo] = useState<TipoAtividade>(tarefa?.tipo ?? "ligacao");

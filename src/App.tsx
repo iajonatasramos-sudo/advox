@@ -3,7 +3,7 @@ import { Ic } from "./icons";
 import { Avatar, Badge, DesbloquearTopbar, Input, useIsMobile } from "./ui";
 import { ModalDesbloquear } from "./modal";
 import { RepDashboard, RepLeadDetail, RepTarefas, RepCasos } from "./rep";
-import { CoordDashboard, CoordTime, CoordLeads, CoordCasos, CoordTarefas } from "./coord";
+import { CoordDashboard, CoordLeads, CoordCasos, CoordTarefas } from "./coord";
 import { AdvDashboard, AdvCasoDetail, AdvPrazos } from "./adv";
 import {
   AdminDashboard, AdminRepresentantes, AdminAdvogados, AdminAuditoria,
@@ -14,16 +14,19 @@ import { MinhaAgenda } from "./agenda";
 import { Clientes } from "./clientes";
 import { PainelAdvoxChat } from "./advoxchat";
 import { PersonaSwitcher, FaixaImpersonacao } from "./persona-switcher";
+import { MeuTime, MinhasRevendas } from "./equipe";
 import {
   PIPELINE_COMERCIAL, PIPELINE_JURIDICO,
   type Persona, type Representante, type User as MockUser,
 } from "./data";
-import { useLiveNotificacoes, useRevendaInfo, useApplyRevendaTheme, type UiLead as Lead, type UiCaso as Caso } from "./lib/data-live";
+import { useLiveNotificacoes, useRevendaInfo, useApplyRevendaTheme, rotuloPapel, type UiLead as Lead, type UiCaso as Caso } from "./lib/data-live";
 import { useAuth, AuthGate, PendingApproval, AuthLoading, ProfileErrorScreen, NovaSenha, type Profile } from "./auth";
 
 const PAPEL_TO_PERSONA: Record<Profile["papel"], Persona> = {
   rep: "rep",
   coord: "coord",
+  gerente: "coord",
+  proprietario: "coord",
   advogado: "adv",
   admin: "admin",
 };
@@ -62,7 +65,7 @@ const NAV: Record<Persona, NavItem[]> = {
   admin: [
     { id: "dashboard",      label: "Visão Geral",     icon: <Ic.Dashboard size={14} /> },
     { id: "revendas",       label: "Revendas",        icon: <Ic.Building size={14} /> },
-    { id: "representantes", label: "Representantes",  icon: <Ic.Users size={14} /> },
+    { id: "representantes", label: "Pessoas",  icon: <Ic.Users size={14} /> },
     { id: "advogados",      label: "Advogados",       icon: <Ic.Gavel size={14} /> },
     { id: "leads",          label: "Todos os Leads",  icon: <Ic.Briefcase size={14} /> },
     { id: "casos",          label: "Todos os Casos",  icon: <Ic.Scale size={14} /> },
@@ -92,7 +95,11 @@ export function App() {
 }
 
 function AppInner({ profile }: { profile: Profile }) {
-  const persona: Persona = PAPEL_TO_PERSONA[profile.papel];
+  const persona: Persona = PAPEL_TO_PERSONA[profile.papel] ?? "rep";
+  // Proprietário tem a tela de revendas da empresa.
+  const navItems: NavItem[] = profile.papel === "proprietario"
+    ? NAV.coord.flatMap(n => n.id === "time" ? [n, { id: "revendas", label: "Revendas", icon: <Ic.Building size={14} /> }] : [n])
+    : NAV[persona];
   // A extensão abre o painel com ?painel=advoxchat&aba=… (ver main.tsx).
   const [inicio] = useState(() => {
     const q = new URLSearchParams(window.location.search);
@@ -115,7 +122,7 @@ function AppInner({ profile }: { profile: Profile }) {
   // that still reference mock-only fields (revenda label, etc.)
   const user: MockUser = {
     nome: profile.nome,
-    papel: profile.papel === "advogado" ? "Advogada" : profile.papel === "coord" ? "Coordenador da Revenda" : profile.papel === "admin" ? "Administrador" : "Representante",
+    papel: rotuloPapel(profile.papel),
     email: profile.email,
     revenda: profile.revenda_id ? (revendaInfo?.nome ?? "—") : undefined,
     oab: profile.oab ?? undefined,
@@ -153,7 +160,8 @@ function AppInner({ profile }: { profile: Profile }) {
       if (route === "agenda")    return <MinhaAgenda onOpenLead={setOpenLead} />;
       if (route === "clientes")  return <Clientes onOpenLead={setOpenLead} />;
       if (route === "advoxchat") return <PainelAdvoxChat onOpenLead={setOpenLead} abaInicial={inicio?.aba} />;
-      if (route === "time")      return <CoordTime onOpenRep={(r) => { setCoordFocusRep(r.nome); setRoute("leads"); }} />;
+      if (route === "time")      return <MeuTime onOpenMembro={(nome) => { setCoordFocusRep(nome); setRoute("leads"); }} />;
+      if (route === "revendas" && profile.papel === "proprietario") return <MinhasRevendas />;
       if (route === "leads")     return <CoordLeads onOpenLead={setOpenLead} focusRep={coordFocusRep} onClearFocus={() => setCoordFocusRep(undefined)} />;
       if (route === "casos")     return <CoordCasos onOpenLead={setOpenLead} />;
       if (route === "tarefas")   return <CoordTarefas />;
@@ -191,6 +199,7 @@ function AppInner({ profile }: { profile: Profile }) {
       />
       <Sidebar
         persona={persona}
+        items={navItems}
         route={route}
         setRoute={(r) => { setRoute(r); setOpenLead(null); setOpenCaso(null); }}
         isMobile={isMobile}
@@ -203,7 +212,7 @@ function AppInner({ profile }: { profile: Profile }) {
         <Topbar
           user={user}
           persona={persona}
-          titulo={openLead ? "Lead" : openCaso ? "Caso" : route === "perfil" ? "Meu perfil" : (NAV[persona].find(n => n.id === route)?.label ?? "")}
+          titulo={openLead ? "Lead" : openCaso ? "Caso" : route === "perfil" ? "Meu perfil" : (navItems.find(n => n.id === route)?.label ?? "")}
           revendaInfo={revendaInfo}
           onOpenNotif={() => setShowNotif(true)}
           onOpenPerfil={() => setRoute("perfil")}
@@ -235,7 +244,7 @@ type TopbarProps = {
 };
 
 const PERSONA_BADGE: Record<Persona, { label: string; icon: React.ReactNode }> = {
-  rep:   { label: "Representante",            icon: <Ic.Briefcase size={12} /> },
+  rep:   { label: "Consultor",            icon: <Ic.Briefcase size={12} /> },
   coord: { label: "Coordenador",              icon: <Ic.Users size={12} /> },
   adv:   { label: "Advogado",                 icon: <Ic.Gavel size={12} /> },
   admin: { label: "Administrador",            icon: <Ic.Settings size={12} /> },
@@ -313,7 +322,7 @@ function Topbar({ user, persona, titulo, revendaInfo, onOpenNotif, onOpenPerfil,
           <Avatar name={user.nome} size={30} />
           <div className="only-desktop" style={{ textAlign: "left" }}>
             <div style={{ fontSize: 12.5, fontWeight: 600 }}>{user.nome}</div>
-            <div style={{ fontSize: 10.5, color: "var(--ink-3)" }}>{personaInfo.label}</div>
+            <div style={{ fontSize: 10.5, color: "var(--ink-3)" }}>{user.papel || personaInfo.label}</div>
           </div>
           <span className="only-desktop"><Ic.ChevronDown size={12} color="var(--ink-4)" /></span>
         </button>
@@ -347,15 +356,15 @@ function Wordmark({ compact, subtitulo }: { compact?: boolean; subtitulo?: strin
 type SidebarProps = {
   revendaInfo: { nome: string; logo_url: string | null } | null;
   persona: Persona;
+  items: NavItem[];
   route: string;
   setRoute: (r: string) => void;
   isMobile: boolean;
   drawerOpen: boolean;
 };
 
-function Sidebar({ persona, route, setRoute, drawerOpen, revendaInfo }: SidebarProps) {
+function Sidebar({ persona, items, route, setRoute, drawerOpen, revendaInfo }: SidebarProps) {
   const { signOut } = useAuth();
-  const items = NAV[persona];
   const labels: Record<Persona, string> = { rep: "Vendas", coord: "Gestão da equipe", adv: "Jurídico", admin: "Administração" };
   return (
     <aside

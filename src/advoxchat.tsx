@@ -7,7 +7,7 @@ import { Ic } from "./icons";
 import { Avatar, Btn, Empty, Field, Input, Tabs } from "./ui";
 import { useAuth } from "./auth";
 import { supabase } from "./lib/supabase";
-import { fmtTelefone, normalizaTelefone, useLiveLeads, type UiLead } from "./lib/data-live";
+import { fmtTelefone, normalizaTelefone, useLiveLeads, ehGestor, rotuloPapel, type UiLead } from "./lib/data-live";
 import {
   sbx, observarTabelas, CORES_PASTA,
   type WaContato, type WaPasta, type WaPastaConversa, type MsgCategoria, type MsgRapida,
@@ -18,7 +18,7 @@ type Aba = "contatos" | "mensagens" | "agenda" | "pastas" | "usuarios" | "instal
 
 export function PainelAdvoxChat({ onOpenLead, abaInicial }: { onOpenLead: (l: UiLead) => void; abaInicial?: string }) {
   const { profile } = useAuth();
-  const ehCoord = profile?.papel === "coord";
+  const ehCoord = ehGestor(profile?.papel);
   const [aba, setAba] = useState<Aba>((abaInicial as Aba) || "contatos");
   const abas = [
     { id: "contatos", label: "Contatos", icon: <Ic.User size={13} /> },
@@ -66,10 +66,10 @@ const dig = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
 
 function Contatos({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) {
   const { profile } = useAuth();
-  const ehCoord = profile?.papel === "coord";
+  const ehCoord = ehGestor(profile?.papel);
   const [contatos, setContatos] = useState<WaContato[] | null>(null);
   const { pastas, conversas } = usePastas();
-  const { leads } = useLiveLeads(ehCoord ? { revendaId: profile?.revenda_id ?? undefined } : { repId: profile?.id });
+  const { leads } = useLiveLeads(ehCoord ? {} : { repId: profile?.id });
   const [busca, setBusca] = useState("");
   const [pasta, setPasta] = useState("");
   const [novo, setNovo] = useState(false);
@@ -131,7 +131,7 @@ function Contatos({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
             <thead>
               <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--line)", textAlign: "left" }}>
-                {["Contato", "Telefone", "Pastas", "Lead no Advox", "Interesses", ...(ehCoord ? ["Representante"] : []), "Últ. contato"].map(h => (
+                {["Contato", "Telefone", "Pastas", "Lead no Advox", "Interesses", ...(ehCoord ? ["Consultor"] : []), "Últ. contato"].map(h => (
                   <th key={h} style={th}>{h}</th>
                 ))}
               </tr>
@@ -333,7 +333,7 @@ function Mensagens() {
 
 function MensagemModal({ msg, cats, onClose }: { msg: MsgRapida | null; cats: MsgCategoria[]; onClose: () => void }) {
   const { profile } = useAuth();
-  const coord = profile?.papel === "coord" && !!profile.revenda_id;
+  const coord = ehGestor(profile?.papel) && !!profile?.revenda_id;
   const [titulo, setTitulo] = useState(msg?.titulo ?? "");
   const [atalho, setAtalho] = useState(msg?.atalho ?? "");
   const [categoria, setCategoria] = useState(msg?.categoria_id ?? "");
@@ -400,7 +400,7 @@ function MensagemModal({ msg, cats, onClose }: { msg: MsgRapida | null; cats: Ms
 
 function CategoriaModal({ cat, total, onClose }: { cat: MsgCategoria | null; total: number; onClose: () => void }) {
   const { profile } = useAuth();
-  const coord = profile?.papel === "coord" && !!profile.revenda_id;
+  const coord = ehGestor(profile?.papel) && !!profile?.revenda_id;
   const [nome, setNome] = useState(cat?.nome ?? "");
   const [cor, setCor] = useState(cat?.cor ?? CORES_PASTA[total % CORES_PASTA.length]);
   const [equipe, setEquipe] = useState(!!cat?.revenda_id);
@@ -548,9 +548,10 @@ function Usuarios() {
   const [uso, setUso] = useState<Record<string, { contatos: number; ultimo: string | null }>>({});
 
   useEffect(() => {
-    if (!profile?.revenda_id) return;
+    if (!profile?.id) return;
     (async () => {
-      const { data } = await supabase.from("profiles").select("id, nome, email, papel, status").eq("revenda_id", profile.revenda_id!).order("nome");
+      // O banco já limita à equipe de quem está vendo.
+      const { data } = await supabase.from("profiles").select("id, nome, email, papel, status").in("papel", ["proprietario", "gerente", "coord", "rep"]).order("nome");
       setMembros((data ?? []) as unknown as Membro[]);
       const { data: cs } = await sbx.from("wa_contatos").select("dono_id, ultimo_contato");
       const m: Record<string, { contatos: number; ultimo: string | null }> = {};
@@ -562,7 +563,7 @@ function Usuarios() {
       }
       setUso(m);
     })();
-  }, [profile?.revenda_id]);
+  }, [profile?.id]);
 
   return (
     <div style={{ padding: 18 }}>
@@ -581,7 +582,7 @@ function Usuarios() {
                     <div style={{ fontSize: 13, fontWeight: 600 }}>{m.nome}</div>
                     <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>{m.email}</div>
                   </div>
-                  <span style={{ fontSize: 11, color: "var(--ink-3)" }}>{m.papel === "coord" ? "Coordenador" : "Representante"}{m.status !== "ativo" ? ` · ${m.status}` : ""}</span>
+                  <span style={{ fontSize: 11, color: "var(--ink-3)" }}>{rotuloPapel(m.papel)}{m.status !== "ativo" ? ` · ${m.status}` : ""}</span>
                   <span style={{ minWidth: 150, textAlign: "right", fontSize: 11.5 }}>
                     {u ? <span style={{ color: "var(--green)", fontWeight: 600 }}>● usa a extensão · {u.contatos} contatos</span> : <span style={{ color: "var(--ink-4)" }}>ainda não usou a extensão</span>}
                     {u?.ultimo && <span style={{ display: "block", color: "var(--ink-4)", fontSize: 10.5 }}>último em {new Date(u.ultimo).toLocaleDateString("pt-BR")}</span>}

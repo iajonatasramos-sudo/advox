@@ -4,7 +4,7 @@
  *   npx supabase gen types typescript --project-id <id> > src/lib/database.types.ts
  */
 
-export type Papel = "admin" | "coord" | "rep" | "advogado";
+export type Papel = "admin" | "proprietario" | "gerente" | "coord" | "rep" | "advogado";
 export type ContaStatus = "pendente" | "ativo" | "suspenso" | "recusado";
 export type Operadora = "Vivo" | "TIM" | "Claro" | "Oi";
 export type TipoAtividade = "ligacao" | "whatsapp" | "visita" | "reuniao" | "email" | "tarefa";
@@ -28,6 +28,8 @@ export type Database = {
           cnpj: string | null;
           status: ContaStatus;
           coord_id: string | null;
+          empresa_id: string;
+          sede: boolean;
           logo_url: string | null;
           cor_primaria: string | null;
           created_at: string;
@@ -44,6 +46,8 @@ export type Database = {
           papel: Papel;
           status: ContaStatus;
           revenda_id: string | null;
+          empresa_id: string | null;
+          superior_id: string | null;
           oab: string | null;
           uf: string | null;
           cidade: string | null;
@@ -187,6 +191,8 @@ export type Database = {
           email: string;
           papel: Papel;
           revenda_id: string | null;
+          empresa_id: string | null;
+          superior_id: string | null;
           invited_by: string;
           token: string;
           aceito_em: string | null;

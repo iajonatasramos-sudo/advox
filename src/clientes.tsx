@@ -7,6 +7,7 @@ import { Avatar, Empty, OperadoraTag } from "./ui";
 import { useAuth } from "./auth";
 import {
   useLiveLeads, fmtBRL, fmtTelefone, parseDateOnly, OPERADORAS_LIST, PIPELINE_COMERCIAL_DB, type UiLead,
+  ehGestor,
 } from "./lib/data-live";
 
 type Faixa = "todos" | "negociacao" | "juridico" | "fechados" | "perdidos" | "fidelidade";
@@ -26,8 +27,8 @@ function diasFidelidade(fim: string | null | undefined): number | null {
 
 export function Clientes({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) {
   const { profile } = useAuth();
-  const ehCoord = profile?.papel === "coord";
-  const { leads } = useLiveLeads(ehCoord ? { revendaId: profile?.revenda_id ?? undefined } : { repId: profile?.id });
+  const ehCoord = ehGestor(profile?.papel);
+  const { leads } = useLiveLeads(ehCoord ? {} : { repId: profile?.id });
   const [faixa, setFaixa] = useState<Faixa>("todos");
   const [busca, setBusca] = useState("");
   const [operadora, setOperadora] = useState("");
@@ -150,7 +151,7 @@ export function Clientes({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
               <thead>
                 <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--line)", textAlign: "left" }}>
-                  {["Empresa", "Contato", "Operadora", "Etapa", "Valor", "Fidelidade", ehCoord ? "Representante" : "WhatsApp", "Criado"].map(h => (
+                  {["Empresa", "Contato", "Operadora", "Etapa", "Valor", "Fidelidade", ehCoord ? "Consultor" : "WhatsApp", "Criado"].map(h => (
                     <th key={h} style={{ padding: "9px 12px", fontSize: 10.5, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr>

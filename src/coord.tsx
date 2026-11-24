@@ -12,7 +12,6 @@ import {
   readLiveCache, writeLiveCache, useRevendaInfo,
   type UiLead,
 } from "./lib/data-live";
-import { ConvidarModal } from "./invite-modal";
 import { BrandingModal } from "./branding-modal";
 
 /* === Tipo do rep no time (do Supabase) === */
@@ -52,18 +51,17 @@ export function CoordDashboard({ onOpenLead }: { onOpenLead: (l: UiLead) => void
   const { profile } = useAuth();
   const revendaId = profile?.revenda_id ?? undefined;
   const revendaNome = useRevendaNome(revendaId);
-  const { leads } = useLiveLeads({ revendaId });
-  const { casos } = useLiveCasos({ revendaId });
-  const { tarefas } = useLiveTarefas({ revendaId });
+  const { leads } = useLiveLeads({});
+  const { casos } = useLiveCasos({});
+  const { tarefas } = useLiveTarefas({});
 
   const teamCacheKey = `coord-team:${revendaId ?? "none"}`;
   const [team, setTeam] = useState<TeamRepRow[] | null>(() => readLiveCache<TeamRepRow[]>(teamCacheKey));
   useEffect(() => {
-    if (!revendaId) { setTeam([]); return; }
+    // O banco já limita ao time de quem está vendo (coordenador, gerente ou proprietário).
     supabase.from("profiles")
       .select("id, nome, email, status, cidade, uf, whats, created_at")
       .eq("papel", "rep")
-      .eq("revenda_id", revendaId)
       .then(({ data }) => {
         const next = (data ?? []) as unknown as TeamRepRow[];
         writeLiveCache(teamCacheKey, next);
@@ -102,11 +100,11 @@ export function CoordDashboard({ onOpenLead }: { onOpenLead: (l: UiLead) => void
               Bom dia{profile?.nome ? `, ${profile.nome.split(" ")[0]}` : ""}.
             </h1>
             <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
-              <strong style={{ color: "var(--ink)" }}>{revendaNome ?? "sua revenda"}</strong> · {(team ?? []).filter(t => t.status === "ativo").length} vendedores ativos · {leads?.length ?? 0} leads
+              <strong style={{ color: "var(--ink)" }}>{revendaNome ?? "sua revenda"}</strong> · {(team ?? []).filter(t => t.status === "ativo").length} consultores ativos · {leads?.length ?? 0} leads
               {tarefasAtrasadas.length > 0 && <> · <strong style={{ color: "var(--rose)" }}>{tarefasAtrasadas.length} tarefas atrasadas</strong></>}
             </div>
           </div>
-          {revendaInfo && (
+          {revendaInfo && profile?.papel === "proprietario" && (
             <Btn variant="default" size="sm" icon={<Ic.Settings size={13} />} onClick={() => setShowBranding(true)}>
               Branding da revenda
             </Btn>
@@ -123,7 +121,7 @@ export function CoordDashboard({ onOpenLead }: { onOpenLead: (l: UiLead) => void
       <div className="grid-2col" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 14 }}>
         <Section title="Ranking do time" subtitle="ordenado por valor fechado" noPad>
           {ranking.length === 0 ? (
-            <Empty icon={<Ic.Users size={18} />} title="Sem ranking ainda" hint="Quando vendedores ativos tiverem leads fechados, aparecem aqui." />
+            <Empty icon={<Ic.Users size={18} />} title="Sem ranking ainda" hint="Quando consultores ativos tiverem leads fechados, aparecem aqui." />
           ) : ranking.map((r, i) => (
             <div key={r.rep.id} style={{
               display: "grid",
@@ -159,7 +157,7 @@ export function CoordDashboard({ onOpenLead }: { onOpenLead: (l: UiLead) => void
               <span style={{ fontSize: 12.5, fontWeight: 600 }}>{tarefasAtrasadas.length} tarefas atrasadas</span>
             </div>
             <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginLeft: 16 }}>
-              Acumuladas pelos vendedores do time
+              Acumuladas pelos consultores do time
             </div>
           </div>
           <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--line)" }}>
@@ -168,7 +166,7 @@ export function CoordDashboard({ onOpenLead }: { onOpenLead: (l: UiLead) => void
               <span style={{ fontSize: 12.5, fontWeight: 600 }}>{(team ?? []).filter(t => t.status === "pendente").length} aprovações pendentes</span>
             </div>
             <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginLeft: 16 }}>
-              Vendedores aguardando você aprovar
+              Consultores aguardando aprovação
             </div>
           </div>
         </Section>
@@ -191,149 +189,6 @@ export function CoordDashboard({ onOpenLead }: { onOpenLead: (l: UiLead) => void
   );
 }
 
-/* === Meu Time (Supabase real) === */
-export function CoordTime({ onOpenRep }: { onOpenRep: (r: { nome: string }) => void }) {
-  const { profile } = useAuth();
-  const revendaId = profile?.revenda_id ?? null;
-  const revendaNome = useRevendaNome(revendaId);
-  const teamCacheKey = `coord-time:${revendaId ?? "none"}`;
-  const [team, setTeam] = useState<TeamRepRow[] | null>(() => readLiveCache<TeamRepRow[]>(teamCacheKey));
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [showInvite, setShowInvite] = useState(false);
-
-  const load = async () => {
-    if (!revendaId) { setTeam([]); return; }
-    setError(null);
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, nome, email, status, cidade, uf, whats, created_at")
-      .eq("papel", "rep")
-      .eq("revenda_id", revendaId)
-      .order("created_at", { ascending: false });
-    if (error) { setError(error.message); return; }
-    const next = (data ?? []) as unknown as TeamRepRow[];
-    writeLiveCache(teamCacheKey, next);
-    setTeam(next);
-  };
-
-  useEffect(() => { load(); }, [revendaId]);
-  useEffect(() => {
-    if (!revendaId) return;
-    const ch = supabase.channel("coord-time")
-      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => load())
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [revendaId]);
-
-  const setStatus = async (id: string, status: ContaStatus) => {
-    setBusy(id);
-    const { error } = await supabase.from("profiles").update({ status } as never).eq("id", id);
-    setBusy(null);
-    if (error) alert("Erro: " + error.message);
-  };
-
-  const all = team ?? [];
-  const ativos = all.filter(r => r.status === "ativo").length;
-  const pendentes = all.filter(r => r.status === "pendente");
-
-  return (
-    <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
-      <header style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Meu Time</h1>
-          <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
-            {team === null ? "Carregando…"
-              : <>{ativos} vendedores ativos{pendentes.length > 0 && <> · <strong style={{ color: "var(--amber-text)" }}>{pendentes.length} aguardando aprovação</strong></>} · {revendaNome ?? "sua revenda"}</>
-            }
-          </div>
-        </div>
-        <Btn variant="primary" size="sm" icon={<Ic.Plus size={13} />} onClick={() => setShowInvite(true)}>Convidar vendedor</Btn>
-      </header>
-
-      {showInvite && (
-        <ConvidarModal
-          open={showInvite}
-          onClose={() => setShowInvite(false)}
-          papelFixo="rep"
-          revendaIdFixa={profile?.revenda_id ?? null}
-          titulo="Convidar Vendedor"
-        />
-      )}
-
-      {error && <div style={{ background: "var(--rose-soft)", border: "1px solid var(--rose-border)", color: "var(--rose)", padding: "10px 14px", borderRadius: 5, fontSize: 12.5 }}>{error}</div>}
-
-      {pendentes.length > 0 && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 12,
-          padding: "12px 16px",
-          background: "linear-gradient(180deg, var(--amber-soft), oklch(0.97 0.02 80))",
-          border: "1px solid var(--amber-border)",
-          borderRadius: 6,
-        }}>
-          <span style={{ width: 32, height: 32, borderRadius: 6, background: "oklch(0.94 0.06 80)", color: "var(--amber-text)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-            <Ic.Clock size={16} />
-          </span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>
-              {pendentes.length} {pendentes.length === 1 ? "vendedor aguardando" : "vendedores aguardando"} sua aprovação
-            </div>
-          </div>
-        </div>
-      )}
-
-      {team === null ? (
-        <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6, padding: 40, textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>Carregando equipe…</div>
-      ) : all.length === 0 ? (
-        <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6 }}>
-          <Empty icon={<Ic.Users size={20} />} title="Nenhum vendedor no time ainda" hint={`Vendedores aparecem aqui após se cadastrarem escolhendo "${revendaNome ?? "sua revenda"}".`} />
-        </div>
-      ) : (
-        <div className="grid-2col" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
-          {all.map(r => (
-            <div key={r.id} style={{
-              background: "var(--surface)",
-              border: r.status === "pendente" ? "1px solid var(--amber-border)" : "1px solid var(--line)",
-              borderRadius: 6, padding: 16,
-              display: "flex", flexDirection: "column", gap: 12,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <Avatar name={r.nome} size={44} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{r.nome}</div>
-                  <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>
-                    {r.cidade ? `${r.cidade}${r.uf ? `/${r.uf}` : ""} · ` : ""}desde <span className="mono">{new Date(r.created_at).toLocaleDateString("pt-BR")}</span>
-                  </div>
-                  <div style={{ fontSize: 11, color: "var(--ink-4)", marginTop: 2 }}>{r.email}</div>
-                </div>
-                <Badge dotColor={STATUS_COLOR[r.status]}>{STATUS_LABEL[r.status]}</Badge>
-              </div>
-
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {r.status === "pendente" && (
-                  <>
-                    <Btn variant="primary" size="sm" disabled={busy === r.id} onClick={() => setStatus(r.id, "ativo")} icon={<Ic.Check size={12} />}>Aprovar</Btn>
-                    <Btn variant="danger" size="sm" disabled={busy === r.id} onClick={() => setStatus(r.id, "recusado")} icon={<Ic.X size={12} />}>Recusar</Btn>
-                  </>
-                )}
-                {r.status === "ativo" && (
-                  <>
-                    <Btn variant="primary" size="sm" icon={<Ic.Eye size={12} />} onClick={() => onOpenRep({ nome: r.nome })}>Ver pipeline</Btn>
-                    <Btn variant="ghost" size="sm" disabled={busy === r.id} onClick={() => setStatus(r.id, "suspenso")}>Suspender</Btn>
-                  </>
-                )}
-                {(r.status === "suspenso" || r.status === "recusado") && (
-                  <Btn variant="ghost" size="sm" disabled={busy === r.id} onClick={() => setStatus(r.id, "ativo")}>Reativar</Btn>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* === Pipeline do time === */
 export function CoordLeads({ onOpenLead, focusRep, onClearFocus }: {
   onOpenLead: (l: UiLead) => void;
@@ -344,8 +199,7 @@ export function CoordLeads({ onOpenLead, focusRep, onClearFocus }: {
   const [view, setView] = useState<"kanban" | "lista">("kanban");
   const [filter, setFilter] = useState("");
   const [selectedRep, setSelectedRep] = useState<string>(focusRep || "Todos");
-  const revendaId = profile?.revenda_id ?? undefined;
-  const { leads } = useLiveLeads({ revendaId });
+  const { leads } = useLiveLeads({});
 
   const reps = Array.from(new Set((leads ?? []).map(l => l.rep?.nome).filter(Boolean) as string[])).sort();
   const filtered = selectedRep === "Todos" ? (leads ?? []) : (leads ?? []).filter(l => l.rep?.nome === selectedRep);
@@ -359,7 +213,7 @@ export function CoordLeads({ onOpenLead, focusRep, onClearFocus }: {
             {focusRep && <span style={{ fontSize: 14, color: "var(--ink-3)", fontWeight: 400, marginLeft: 10 }}>· pipeline de {focusRep}</span>}
           </h1>
           <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
-            {leads === null ? "Carregando…" : `${filtered.length} leads ${selectedRep !== "Todos" ? `com ${selectedRep}` : `de ${reps.length} vendedores`}`}
+            {leads === null ? "Carregando…" : `${filtered.length} leads ${selectedRep !== "Todos" ? `com ${selectedRep}` : `de ${reps.length} consultores`}`}
           </div>
         </div>
         {focusRep && onClearFocus && (
@@ -413,9 +267,8 @@ export function CoordLeads({ onOpenLead, focusRep, onClearFocus }: {
 /* === Casos do time === */
 export function CoordCasos({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) {
   const { profile } = useAuth();
-  const revendaId = profile?.revenda_id ?? undefined;
-  const { casos } = useLiveCasos({ revendaId });
-  const { leads } = useLiveLeads({ revendaId });
+  const { casos } = useLiveCasos({});
+  const { leads } = useLiveLeads({});
   const all = casos ?? [];
   return (
     <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -437,7 +290,7 @@ export function CoordCasos({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) 
         {casos === null ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>Carregando…</div>
         ) : all.length === 0 ? (
-          <Empty icon={<Ic.Scale size={20} />} title="Nenhum caso ainda" hint="Casos aparecem aqui quando vendedores do seu time usarem o botão 'Desbloquear Cliente' nos leads." />
+          <Empty icon={<Ic.Scale size={20} />} title="Nenhum caso ainda" hint="Casos aparecem aqui quando consultores do seu time usarem o botão 'Desbloquear Cliente' nos leads." />
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
             <thead>
@@ -476,8 +329,7 @@ export function CoordCasos({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) 
 /* === Tarefas do time === */
 export function CoordTarefas() {
   const { profile } = useAuth();
-  const revendaId = profile?.revenda_id ?? undefined;
-  const { tarefas } = useLiveTarefas({ revendaId });
+  const { tarefas } = useLiveTarefas({});
   const groups = [
     { id: "atrasada", label: "Atrasadas — pendentes do time", color: "var(--rose)" },
     { id: "hoje", label: "Para hoje", color: "var(--amber)" },

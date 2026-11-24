@@ -15,8 +15,10 @@ const CHAVE_LISTA = "advox-impersonacao-lista"; // lista de usuários (o alvo n�
 
 const GRUPOS: { titulo: string; papel: string; rotulo: string }[] = [
   { titulo: "Administração", papel: "admin", rotulo: "Admin" },
+  { titulo: "Proprietários", papel: "proprietario", rotulo: "Proprietário" },
+  { titulo: "Gerência", papel: "gerente", rotulo: "Gerente" },
   { titulo: "Coordenação", papel: "coord", rotulo: "Coordenador" },
-  { titulo: "Vendas", papel: "rep", rotulo: "Representante" },
+  { titulo: "Consultores", papel: "rep", rotulo: "Consultor" },
   { titulo: "Jurídico", papel: "advogado", rotulo: "Advogado" },
 ];
 const rotuloPapel = (p: string) => GRUPOS.find(g => g.papel === p)?.rotulo ?? p;

@@ -7,7 +7,7 @@ import { APP_URL, abrirPainel, entrar, sair, type Perfil } from '@/content/api';
 import { minhaFoto } from '@/content/wa';
 import { toast } from './toast';
 
-const PAPEL: Record<string, string> = { rep: 'Representante', coord: 'Coordenador', admin: 'Administrador', advogado: 'Advogado' };
+const PAPEL: Record<string, string> = { rep: 'Consultor', coord: 'Coordenador', gerente: 'Gerente', proprietario: 'Proprietário', admin: 'Administrador', advogado: 'Advogado' };
 
 export function Logo({ tamanho = 24 }: { tamanho?: number }) {
   return (

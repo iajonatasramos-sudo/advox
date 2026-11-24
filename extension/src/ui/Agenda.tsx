@@ -98,7 +98,7 @@ export function AgendaModal() {
 // ───────────────────── Agenda e Etiquetas (tarefas) ─────────────────────
 function AtividadesView({ etiquetas }: { etiquetas: boolean }) {
   const { perfil, lead } = useDados();
-  const ehCoord = perfil.papel === 'coord' || perfil.papel === 'admin';
+  const ehCoord = ['coord', 'gerente', 'proprietario', 'admin'].includes(perfil.papel);
   const [escopo, setEscopo] = useState<'eu' | 'time'>('eu');
   const [itens, setItens] = useState<Atividade[] | null>(null);
   const [editando, setEditando] = useState<Rascunho | null>(null);

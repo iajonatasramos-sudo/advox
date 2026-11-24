@@ -1,58 +1,92 @@
 import React, { useState, useEffect } from "react";
 import { Ic } from "./icons";
 import { Btn, Input, Field, Select } from "./ui";
-import { createConvite, buildInviteUrl, type Papel } from "./lib/data-live";
+import { createConvite, buildInviteUrl, rotuloPapel, rankPapel, type Papel } from "./lib/data-live";
 import { supabase } from "./lib/supabase";
 import { useAuth } from "./auth";
 
-type Revenda = { id: string; nome: string };
+type Revenda = { id: string; nome: string; empresa_id: string };
+type Pessoa = { id: string; nome: string; papel: Papel; empresa_id: string | null };
+
+/** Funções que cada um pode convidar (sempre abaixo de si). */
+function funcoesConvidaveis(papel: Papel | undefined): Papel[] {
+  if (papel === "admin") return ["proprietario", "gerente", "coord", "rep", "advogado", "admin"];
+  if (papel === "proprietario") return ["gerente", "coord", "rep"];
+  if (papel === "gerente") return ["coord", "rep"];
+  if (papel === "coord") return ["rep"];
+  return [];
+}
 
 export function ConvidarModal({
-  open, onClose, papelFixo, revendaIdFixa, titulo,
+  open, onClose, papelFixo, revendaIdFixa, superiorFixo, titulo,
 }: {
   open: boolean;
   onClose: () => void;
-  papelFixo?: Papel;       // se definido, o papel é fixo (ex: Coord convida só Rep)
-  revendaIdFixa?: string | null;  // se definida, a revenda é fixa
+  papelFixo?: Papel;              // função já definida (ex.: admin convidando advogado)
+  revendaIdFixa?: string | null;  // revenda já definida
+  superiorFixo?: string | null;   // já entra no time de alguém
   titulo?: string;
 }) {
   const { profile } = useAuth();
+  const meuPapel = profile?.papel as Papel | undefined;
+  const opcoes = papelFixo ? [papelFixo] : funcoesConvidaveis(meuPapel);
+  // Admin começa por Proprietário; gestores, pela função logo abaixo da base (Consultor).
+  const padrao: Papel = papelFixo ?? (meuPapel === "admin" ? "proprietario" : opcoes[opcoes.length - 1] ?? "rep");
   const [email, setEmail] = useState("");
-  const [papel, setPapel] = useState<Papel>(papelFixo ?? "rep");
+  const [papel, setPapel] = useState<Papel>(padrao);
   const [revendaId, setRevendaId] = useState<string>(revendaIdFixa ?? "");
+  const [superiorId, setSuperiorId] = useState<string>(superiorFixo ?? "");
   const [revendas, setRevendas] = useState<Revenda[]>([]);
+  const [pessoas, setPessoas] = useState<Pessoa[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
 
+  const comercial = rankPapel(papel) >= 1;
+  const revendaTravada = !!revendaIdFixa || meuPapel === "coord";
+
   useEffect(() => {
     if (!open) return;
     setEmail(""); setErr(null); setInviteUrl(null);
-    setPapel(papelFixo ?? "rep");
-    setRevendaId(revendaIdFixa ?? "");
-    // carrega revendas se não estiver fixa
-    if (!revendaIdFixa) {
-      supabase.from("revendas").select("id, nome").eq("status", "ativo").order("nome").then(({ data }) => {
-        setRevendas((data ?? []) as unknown as Revenda[]);
-      });
-    }
-  }, [open, papelFixo, revendaIdFixa]);
+    setPapel(padrao);
+    setRevendaId(revendaIdFixa ?? (meuPapel === "coord" ? profile?.revenda_id ?? "" : ""));
+    setSuperiorId(superiorFixo ?? "");
+    let q = supabase.from("revendas").select("id, nome, empresa_id").eq("status", "ativo").order("nome");
+    if (meuPapel !== "admin" && profile?.empresa_id) q = q.eq("empresa_id", profile.empresa_id);
+    q.then(({ data }) => {
+      const lista = (data ?? []) as unknown as Revenda[];
+      setRevendas(lista);
+      // Empresa com uma revenda só: já vem escolhida.
+      if (!revendaIdFixa && meuPapel !== "coord" && lista.length === 1) setRevendaId(lista[0].id);
+    });
+    supabase.from("profiles").select("id, nome, papel, empresa_id").in("papel", ["coord", "gerente"]).eq("status", "ativo").order("nome")
+      .then(({ data }) => setPessoas((data ?? []) as unknown as Pessoa[]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, papelFixo, revendaIdFixa, superiorFixo]);
 
-  const precisaRevenda = papel === "rep" || papel === "coord";
+  const empresaId = revendas.find(r => r.id === revendaId)?.empresa_id ?? profile?.empresa_id ?? null;
+
+  // Quem pode ser o superior: consultor → coordenador; coordenador → gerente.
+  const papelSuperior: Papel | null = papel === "rep" ? "coord" : papel === "coord" ? "gerente" : null;
+  const superiores = pessoas.filter(p => p.papel === papelSuperior && (!empresaId || p.empresa_id === empresaId));
+  // Coordenador convidando consultor (ou gerente convidando coordenador): entra no próprio time.
+  const superiorAutomatico = papelSuperior && meuPapel === papelSuperior ? profile?.id ?? null : null;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile?.id) return;
-    if (precisaRevenda && !revendaId) { setErr("Selecione uma revenda."); return; }
+    if (comercial && !revendaId) { setErr("Escolha a revenda."); return; }
     setBusy(true); setErr(null);
     const { data, error } = await createConvite({
       email,
       papel,
-      revenda_id: precisaRevenda ? revendaId : null,
+      revenda_id: comercial ? revendaId : null,
+      empresa_id: comercial ? empresaId : null,
+      superior_id: superiorFixo ?? superiorAutomatico ?? (superiorId || null),
       invited_by: profile.id,
     });
     setBusy(false);
-    if (error || !data) { setErr(error ?? "Erro desconhecido."); return; }
+    if (error || !data) { setErr(error?.includes("row-level security") ? "Você não pode convidar alguém com essa função." : error ?? "Erro desconhecido."); return; }
     setInviteUrl(buildInviteUrl(data.token));
   };
 
@@ -81,7 +115,7 @@ export function ConvidarModal({
             <Ic.Mail size={15} />
           </span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>{titulo ?? "Enviar convite"}</div>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>{titulo ?? "Convidar para a equipe"}</div>
             <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>
               {inviteUrl ? "Convite criado. Compartilhe o link abaixo." : "Gera um link de convite seguro."}
             </div>
@@ -97,15 +131,26 @@ export function ConvidarModal({
             <Field label="Email do convidado">
               <Input full type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="pessoa@empresa.com" autoFocus />
             </Field>
-            {!papelFixo && (
-              <Field label="Papel">
-                <Select value={papel} onChange={e=>setPapel(e.target.value as Papel)} options={["rep","coord","advogado","admin"]} />
+            {opcoes.length > 1 && (
+              <Field label="Função">
+                <Select value={papel} onChange={e=>{ setPapel(e.target.value as Papel); setSuperiorId(""); }}
+                  options={opcoes.map(p => ({ value: p, label: rotuloPapel(p) }))} />
               </Field>
             )}
-            {precisaRevenda && !revendaIdFixa && (
-              <Field label="Revenda">
-                <Select value={revendaId} onChange={e=>setRevendaId(e.target.value)} options={["", ...revendas.map(r => r.id)]} />
+            {comercial && !revendaTravada && (
+              <Field label="Revenda" hint={papel === "proprietario" ? "O proprietário fica dono da empresa dessa revenda." : undefined}>
+                <Select value={revendaId} onChange={e=>{ setRevendaId(e.target.value); setSuperiorId(""); }}
+                  options={[{ value: "", label: "Escolha…" }, ...revendas.map(r => ({ value: r.id, label: r.nome }))]} />
               </Field>
+            )}
+            {papelSuperior && !superiorFixo && !superiorAutomatico && (
+              <Field label={papel === "rep" ? "Time do coordenador" : "Time do gerente"}>
+                <Select value={superiorId} onChange={e=>setSuperiorId(e.target.value)}
+                  options={[{ value: "", label: "Sem time por enquanto" }, ...superiores.map(p => ({ value: p.id, label: p.nome }))]} />
+              </Field>
+            )}
+            {superiorAutomatico && (
+              <div style={{ fontSize: 12, color: "var(--ink-3)" }}>Vai entrar no seu time.</div>
             )}
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 6 }}>
               <Btn variant="ghost" onClick={onClose}>Cancelar</Btn>
@@ -120,7 +165,7 @@ export function ConvidarModal({
               display: "flex", alignItems: "center", gap: 8,
             }}>
               <Ic.CheckCircle size={14} />
-              <span>Convite gerado para <strong>{email}</strong>. Expira em 7 dias.</span>
+              <span>Convite de <strong>{rotuloPapel(papel)}</strong> gerado para <strong>{email}</strong>. Expira em 7 dias.</span>
             </div>
 
             <Field label="Link do convite" hint="Envie por email, WhatsApp ou qualquer canal — quem abrir cria a conta automaticamente.">

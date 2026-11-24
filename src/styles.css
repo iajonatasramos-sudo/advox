@@ -326,3 +326,36 @@ input:focus, textarea:focus, select:focus { outline: none; }
 .card-hover:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); border-color: var(--line-2); }
 .modal-shell { border-radius: 14px !important; }
 @media (max-width: 768px) { .modal-shell { border-radius: 0 !important; } }
+
+/* ---------- Organograma (Meu Time) ---------- */
+.org-scroll { overflow-x: auto; padding: 22px 16px 26px; }
+.org { display: flex; flex-direction: column; align-items: center; min-width: min-content; }
+.org-raiz { position: relative; padding-bottom: 18px; }
+.org-raiz::after { content: ""; position: absolute; left: 50%; bottom: 0; height: 18px; border-left: 2px solid var(--line-2); }
+.org-ramos { display: flex; justify-content: center; align-items: flex-start; }
+.org-ramo { position: relative; padding: 18px 10px 0; }
+.org-ramo::before { content: ""; position: absolute; top: 0; left: 50%; height: 18px; border-left: 2px solid var(--line-2); }
+.org-ramo::after { content: ""; position: absolute; top: 0; left: 0; right: 0; border-top: 2px solid var(--line-2); }
+.org-ramo:first-child::after { left: 50%; }
+.org-ramo:last-child::after { right: 50%; }
+.org-ramo:only-child::after { display: none; }
+.org-coluna { display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: 250px; }
+.org-coluna .org-cartao, .org-solto .org-cartao { width: 100%; }
+.org-sub { display: flex; flex-direction: column; gap: 10px; padding-left: 12px; border-left: 2px solid var(--line-2); margin-left: 16px; }
+.org-bloco { display: flex; flex-direction: column; gap: 6px; }
+.org-folhas { display: flex; flex-direction: column; gap: 4px; padding-left: 12px; border-left: 2px dashed var(--line-2); margin-left: 16px; }
+.org-cartao {
+  display: flex; align-items: center; gap: 10px; width: 220px; padding: 10px 12px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: var(--shadow-sm); font: inherit; color: var(--ink); text-align: left;
+  transition: border-color .15s, box-shadow .15s;
+}
+button.org-cartao:hover { border-color: var(--line-2); box-shadow: var(--shadow-md, var(--shadow-sm)); }
+.org-raiz .org-cartao { background: var(--navy-soft); }
+.org-chip {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 10px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px;
+  font: inherit; font-size: 12.5px; color: var(--ink); cursor: pointer; text-align: left;
+}
+.org-chip:hover { border-color: var(--line-2); background: var(--surface); }
+.org-solto { width: 100%; padding: 10px; border: 1.5px dashed var(--amber-border); border-radius: 10px; background: var(--amber-soft); }

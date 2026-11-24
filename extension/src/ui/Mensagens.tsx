@@ -238,7 +238,7 @@ function MensagemDialog({ mensagem, onCriarCategoria, onClose }: { mensagem: Men
   const [texto, setTexto] = useState(mensagem?.texto ?? '');
   const [equipe, setEquipe] = useState(!!mensagem?.revenda_id);
   const [salvando, setSalvando] = useState(false);
-  const coord = perfil.papel === 'coord' && !!perfil.revenda_id;
+  const coord = ['coord', 'gerente', 'proprietario'].includes(perfil.papel) && !!perfil.revenda_id;
   const areaRef = useRef<HTMLTextAreaElement | null>(null);
 
   function inserirVar(v: string) {
@@ -326,7 +326,7 @@ function CategoriaDialog({ categoria, onClose }: { categoria: Categoria | null; 
   const [cor, setCor] = useState(categoria?.cor ?? CORES_CATEGORIA[categorias.length % CORES_CATEGORIA.length]);
   const [equipe, setEquipe] = useState(!!categoria?.revenda_id);
   const [salvando, setSalvando] = useState(false);
-  const coord = perfil.papel === 'coord' && !!perfil.revenda_id;
+  const coord = ['coord', 'gerente', 'proprietario'].includes(perfil.papel) && !!perfil.revenda_id;
 
   async function salvar() {
     if (!nome.trim()) { toast.error('Dê um nome à categoria.'); return; }

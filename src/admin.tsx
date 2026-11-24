@@ -11,7 +11,7 @@ import {
 } from "./data";
 import { supabase } from "./lib/supabase";
 import type { ContaStatus } from "./lib/database.types";
-import { useLiveLeads, useLiveCasos, useLiveAuditoria, readLiveCache, writeLiveCache, type UiLead, type UiCaso } from "./lib/data-live";
+import { useLiveLeads, useLiveCasos, useLiveAuditoria, readLiveCache, writeLiveCache, rotuloPapel, rpcEquipe, type UiLead, type UiCaso } from "./lib/data-live";
 import { ConvidarModal } from "./invite-modal";
 import { BrandingModal } from "./branding-modal";
 
@@ -42,6 +42,7 @@ type RepRow = {
   id: string;
   nome: string;
   email: string;
+  papel: string;
   status: ContaStatus;
   uf: string | null;
   cidade: string | null;
@@ -397,7 +398,7 @@ function RankList({ items }: { items: RankItem[] }) {
 
 /* === Representantes (Supabase real) === */
 export function AdminRepresentantes() {
-  const CACHE_KEY = "admin-reps-list";
+  const CACHE_KEY = "admin-pessoas-list";
   const [reps, setReps] = useState<RepRow[] | null>(() => readLiveCache<RepRow[]>(CACHE_KEY));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null); // id em ação
@@ -409,8 +410,8 @@ export function AdminRepresentantes() {
     setError(null);
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, nome, email, status, uf, cidade, whats, created_at, revenda:revendas!profiles_revenda_id_fkey(nome)")
-      .eq("papel", "rep")
+      .select("id, nome, email, papel, status, uf, cidade, whats, created_at, revenda:revendas!profiles_revenda_id_fkey(nome)")
+      .in("papel", ["proprietario", "gerente", "coord", "rep"])
       .order("created_at", { ascending: false });
     if (error) { setError(error.message); return; }
     const next = (data ?? []) as unknown as RepRow[];
@@ -458,18 +459,18 @@ export function AdminRepresentantes() {
     <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
       <header style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Representantes</h1>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Pessoas das revendas</h1>
           <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
             {reps === null ? "Carregando…" : `${all.length} contas · ${pendentesCount} pendentes · ${ativosCount} ativas`}
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <Btn variant="soft" size="sm" icon={<Ic.Download size={13} />}>Exportar</Btn>
-          <Btn variant="primary" size="sm" icon={<Ic.Plus size={13} />} onClick={() => setShowInvite(true)}>Convidar representante</Btn>
+          <Btn variant="primary" size="sm" icon={<Ic.Plus size={13} />} onClick={() => setShowInvite(true)}>Convidar</Btn>
         </div>
       </header>
 
-      {showInvite && <ConvidarModal open={showInvite} onClose={() => setShowInvite(false)} papelFixo="rep" titulo="Convidar Representante" />}
+      {showInvite && <ConvidarModal open={showInvite} onClose={() => setShowInvite(false)} titulo="Convidar para uma revenda" />}
 
       <div className="toolbar-row" style={{
         display: "flex", gap: 8, alignItems: "center",
@@ -498,14 +499,14 @@ export function AdminRepresentantes() {
 
       <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6, overflow: "hidden" }}>
         {reps === null ? (
-          <div style={{ padding: 40, textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>Carregando representantes…</div>
+          <div style={{ padding: 40, textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>Carregando…</div>
         ) : visible.length === 0 ? (
-          <Empty icon={<Ic.Users size={20} />} title={f === "Todos" && !search ? "Nenhum representante cadastrado ainda" : "Nenhum representante para esse filtro"} hint={f === "Todos" && !search ? "Eles aparecem aqui após se cadastrarem pelo app." : "Tente outro filtro ou busca."} />
+          <Empty icon={<Ic.Users size={20} />} title={f === "Todos" && !search ? "Ninguém cadastrado ainda" : "Ninguém para esse filtro"} hint={f === "Todos" && !search ? "Eles aparecem aqui após se cadastrarem pelo app." : "Tente outro filtro ou busca."} />
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
             <thead>
               <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--line)" }}>
-                {["Representante", "Email", "Revenda", "Local", "Status", "Desde", ""].map(h => (
+                {["Pessoa", "Função", "Email", "Revenda", "Local", "Status", "Desde", ""].map(h => (
                   <th key={h} style={{ textAlign: "left", padding: "9px 12px", fontWeight: 500, color: "var(--ink-3)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
                 ))}
               </tr>
@@ -522,6 +523,7 @@ export function AdminRepresentantes() {
                       </div>
                     </div>
                   </td>
+                  <td style={{ padding: "10px 12px", color: "var(--ink-2)", fontWeight: 500 }}>{rotuloPapel(r.papel)}</td>
                   <td style={{ padding: "10px 12px", color: "var(--ink-2)" }}>{r.email}</td>
                   <td style={{ padding: "10px 12px", color: "var(--ink-2)" }}>{r.revenda?.nome ?? "—"}</td>
                   <td style={{ padding: "10px 12px", color: "var(--ink-2)" }}>
@@ -573,7 +575,8 @@ type RevendaRow = {
   cnpj: string | null;
   status: ContaStatus;
   created_at: string;
-  coord: { nome: string; email: string } | null;
+  sede: boolean;
+  empresa: { nome: string; proprietario: { nome: string; email: string } | null } | null;
   logo_url: string | null;
   cor_primaria: string | null;
 };
@@ -591,7 +594,7 @@ export function AdminRevendas() {
     setError(null);
     const { data, error } = await supabase
       .from("revendas")
-      .select("id, nome, cnpj, status, created_at, logo_url, cor_primaria, coord:profiles!revendas_coord_fk(nome, email)")
+      .select("id, nome, cnpj, status, created_at, logo_url, cor_primaria, sede, empresa:empresas!revendas_empresa_id_fkey(nome, proprietario:profiles!empresas_proprietario_id_fkey(nome, email))")
       .order("created_at", { ascending: false });
     if (error) { setError(error.message); return; }
     const next = (data ?? []) as unknown as RevendaRow[];
@@ -618,7 +621,8 @@ export function AdminRevendas() {
   const all = list ?? [];
   const visible = !search ? all : all.filter(r =>
     r.nome.toLowerCase().includes(search.toLowerCase()) ||
-    (r.coord?.nome.toLowerCase().includes(search.toLowerCase()) ?? false)
+    (r.empresa?.nome.toLowerCase().includes(search.toLowerCase()) ?? false) ||
+    (r.empresa?.proprietario?.nome.toLowerCase().includes(search.toLowerCase()) ?? false)
   );
 
   return (
@@ -632,12 +636,12 @@ export function AdminRevendas() {
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <Btn variant="soft" size="sm" icon={<Ic.Download size={13} />}>Exportar</Btn>
-          <Btn variant="primary" size="sm" icon={<Ic.Plus size={13} />} onClick={() => setShowNew(true)}>Nova revenda</Btn>
+          <Btn variant="primary" size="sm" icon={<Ic.Plus size={13} />} onClick={() => setShowNew(true)}>Nova empresa</Btn>
         </div>
       </header>
 
       <div className="toolbar-row" style={{ display: "flex", gap: 8, alignItems: "center", padding: "10px 12px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6 }}>
-        <Input icon={<Ic.Search size={13} />} placeholder="Buscar por nome ou coordenador" value={search} onChange={e=>setSearch(e.target.value)} style={{ minWidth: "min(320px, 100%)" }} />
+        <Input icon={<Ic.Search size={13} />} placeholder="Buscar por revenda, empresa ou proprietário" value={search} onChange={e=>setSearch(e.target.value)} style={{ minWidth: "min(320px, 100%)" }} />
       </div>
 
       {error && (
@@ -653,14 +657,14 @@ export function AdminRevendas() {
           <Empty
             icon={<Ic.Building size={20} />}
             title="Nenhuma revenda cadastrada"
-            hint="Clique em 'Nova revenda' para criar a primeira."
-            action={<Btn variant="primary" size="sm" icon={<Ic.Plus size={12} />} onClick={() => setShowNew(true)}>Nova revenda</Btn>}
+            hint="Clique em 'Nova empresa' — ela já nasce com a revenda sede."
+            action={<Btn variant="primary" size="sm" icon={<Ic.Plus size={12} />} onClick={() => setShowNew(true)}>Nova empresa</Btn>}
           />
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
             <thead>
               <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--line)" }}>
-                {["Revenda", "CNPJ", "Coordenador", "Status", "Desde", ""].map(h => (
+                {["Revenda", "Empresa", "Proprietário", "Status", "Desde", ""].map(h => (
                   <th key={h} style={{ textAlign: "left", padding: "9px 12px", fontWeight: 500, color: "var(--ink-3)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
                 ))}
               </tr>
@@ -683,18 +687,21 @@ export function AdminRevendas() {
                           <Ic.Building size={14} />
                         )}
                       </span>
-                      <div style={{ fontWeight: 500 }}>{r.nome}</div>
+                      <div>
+                        <div style={{ fontWeight: 500 }}>{r.nome}{r.sede && <span style={{ marginLeft: 6, fontSize: 10.5, color: "var(--gold-2)", fontWeight: 600 }}>SEDE</span>}</div>
+                        <div style={{ fontSize: 11, color: "var(--ink-4)" }} className="mono">{r.cnpj ?? "sem CNPJ"}</div>
+                      </div>
                     </div>
                   </td>
-                  <td style={{ padding: "10px 12px", color: "var(--ink-2)" }} className="mono">{r.cnpj ?? "—"}</td>
+                  <td style={{ padding: "10px 12px", color: "var(--ink-2)" }}>{r.empresa?.nome ?? "—"}</td>
                   <td style={{ padding: "10px 12px" }}>
-                    {r.coord ? (
+                    {r.empresa?.proprietario ? (
                       <div>
-                        <div style={{ fontSize: 12.5, color: "var(--ink)" }}>{r.coord.nome}</div>
-                        <div style={{ fontSize: 11, color: "var(--ink-4)" }}>{r.coord.email}</div>
+                        <div style={{ fontSize: 12.5, color: "var(--ink)" }}>{r.empresa.proprietario.nome}</div>
+                        <div style={{ fontSize: 11, color: "var(--ink-4)" }}>{r.empresa.proprietario.email}</div>
                       </div>
                     ) : (
-                      <span style={{ color: "var(--ink-4)", fontStyle: "italic" }}>Sem coord</span>
+                      <span style={{ color: "var(--ink-4)", fontStyle: "italic" }}>Sem proprietário — convide em Pessoas</span>
                     )}
                   </td>
                   <td style={{ padding: "10px 12px" }}>
@@ -741,13 +748,9 @@ function NovaRevendaModal({ onClose }: { onClose: () => void }) {
     e.preventDefault();
     setErr(null);
     setBusy(true);
-    const payload = { nome: nome.trim(), cnpj: cnpj.trim() || null, status: "ativo" as ContaStatus };
-    const { error } = await supabase.from("revendas").insert(payload as never);
+    const r = await rpcEquipe("criar_empresa", { p_nome: nome.trim(), p_cnpj: cnpj.trim() || null });
     setBusy(false);
-    if (error) {
-      setErr(error.message.includes("duplicate") ? "Já existe uma revenda com esse nome." : error.message);
-      return;
-    }
+    if (r.error) { setErr(r.error); return; }
     onClose();
   };
 
@@ -770,8 +773,8 @@ function NovaRevendaModal({ onClose }: { onClose: () => void }) {
             <Ic.Building size={15} />
           </span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>Nova revenda</div>
-            <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>Será listada na tela de cadastro de Representantes</div>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>Nova empresa</div>
+            <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>Já nasce com a revenda sede. Depois convide o proprietário em Pessoas.</div>
           </div>
           <button onClick={onClose} style={{ background: "transparent", border: 0, color: "var(--ink-3)", cursor: "pointer", padding: 6 }}>
             <Ic.X size={16} />
@@ -784,7 +787,7 @@ function NovaRevendaModal({ onClose }: { onClose: () => void }) {
               {err}
             </div>
           )}
-          <Field label="Nome da revenda">
+          <Field label="Nome da empresa">
             <Input full value={nome} onChange={e=>setNome(e.target.value)} placeholder="Konecta" autoFocus />
           </Field>
           <Field label="CNPJ (opcional)">
@@ -793,7 +796,7 @@ function NovaRevendaModal({ onClose }: { onClose: () => void }) {
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 6 }}>
             <Btn variant="ghost" onClick={onClose}>Cancelar</Btn>
             <Btn variant="primary" type="submit" disabled={busy || !nome.trim()}>
-              {busy ? "Criando…" : "Criar revenda"}
+              {busy ? "Criando…" : "Criar empresa"}
             </Btn>
           </div>
         </form>
