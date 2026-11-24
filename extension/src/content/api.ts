@@ -360,3 +360,69 @@ export async function abrirPainel(aba = 'contatos') {
 export function aplicarVariaveis(t: string, v: Record<string, string>) {
   return t.replace(/\{\{(\w+)\}\}/g, (_, k) => v[k] ?? '');
 }
+
+// ─────────────── Minha Agenda (mesmas tabelas do app: tarefas e anotacoes) ───────────────
+
+export type Atividade = {
+  id: string; descricao: string; quando: string | null; tipo: string; completed: boolean;
+  lead_id: string | null; autor_id: string;
+  lead: { id: string; empresa: string; contato: string | null } | null;
+  autor: { id: string; nome: string } | null;
+};
+
+/** Cor de cada etiqueta (tipo de atividade) — a mesma paleta do app. */
+export const COR_TIPO: Record<string, string> = {
+  ligacao: '#2563eb', whatsapp: '#16a34a', visita: '#7c3aed', reuniao: '#d97706', email: '#0d9488', tarefa: '#64748b',
+};
+export const rotuloTipo = (t: string) => TIPOS_ATIVIDADE.find((x) => x.id === t)?.label ?? t;
+
+/** "eu" = só as minhas; "time" = tudo que a RLS deixa ver (coordenador vê o time). */
+export async function listarAgenda(perfil: Perfil, escopo: 'eu' | 'time'): Promise<Atividade[]> {
+  let q = sb.from('tarefas')
+    .select('id, descricao, quando, tipo, completed, lead_id, autor_id, lead:leads(id, empresa, contato), autor:profiles!tarefas_autor_id_fkey(id, nome)')
+    .order('quando', { ascending: true, nullsFirst: false })
+    .limit(1000);
+  if (escopo === 'eu') q = q.eq('autor_id', perfil.id);
+  const { data, error } = await q;
+  if (error) { console.error('[Advox] agenda', error); return []; }
+  return (data as unknown as Atividade[]) ?? [];
+}
+
+export async function salvarAtividade(perfil: Perfil, a: { id?: string; descricao: string; tipo: string; quando: string | null; lead_id: string | null }): Promise<string | null> {
+  const campos = { descricao: a.descricao, tipo: a.tipo, quando: a.quando, lead_id: a.lead_id };
+  const { error } = a.id
+    ? await sb.from('tarefas').update(campos).eq('id', a.id)
+    : await sb.from('tarefas').insert({ ...campos, autor_id: perfil.id, prioridade: 'media', urgencia: 'hoje' });
+  return error ? msg(error) : null;
+}
+
+export async function concluirAtividade(id: string, feito: boolean): Promise<string | null> {
+  const { error } = await sb.from('tarefas').update({ completed: feito, completed_at: feito ? new Date().toISOString() : null }).eq('id', id);
+  return error ? msg(error) : null;
+}
+
+export async function apagarAtividade(id: string): Promise<string | null> {
+  const { error } = await sb.from('tarefas').delete().eq('id', id);
+  return error ? msg(error) : null;
+}
+
+export type Anotacao = { id: string; titulo: string; conteudo: string; categoria: string | null; updated_at: string };
+
+export async function listarAnotacoes(): Promise<Anotacao[]> {
+  const { data, error } = await sb.from('anotacoes').select('id, titulo, conteudo, categoria, updated_at').order('updated_at', { ascending: false });
+  if (error) console.error('[Advox] anotacoes', error);
+  return (data as Anotacao[] | null) ?? [];
+}
+
+export async function salvarAnotacao(perfil: Perfil, n: { id?: string; titulo: string; conteudo: string; categoria: string | null }): Promise<{ id?: string; erro?: string }> {
+  const campos = { titulo: n.titulo, conteudo: n.conteudo, categoria: n.categoria };
+  const { data, error } = n.id
+    ? await sb.from('anotacoes').update(campos).eq('id', n.id).select('id').single()
+    : await sb.from('anotacoes').insert({ ...campos, dono_id: perfil.id }).select('id').single();
+  return error ? { erro: msg(error) } : { id: (data as { id: string }).id };
+}
+
+export async function apagarAnotacao(id: string): Promise<string | null> {
+  const { error } = await sb.from('anotacoes').delete().eq('id', id);
+  return error ? msg(error) : null;
+}

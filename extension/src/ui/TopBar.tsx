@@ -2,9 +2,9 @@
 // (filtro; várias = só quem está em todas), "+" de Minhas pastas e a conta.
 // Clicar em ponto livre da barra abre as mensagens rápidas.
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { CalendarDays, Plus } from 'lucide-react';
 import { cn, emPx, ALTURA_TOPBAR } from '@/lib/utils';
-import { abaGaveta, alternarPastaAtiva, gavetaAberta, menuHeader, modalConta, modalPastas, pastasAtivas } from '@/lib/store';
+import { abaGaveta, alternarPastaAtiva, gavetaAberta, menuHeader, modalAgenda, modalConta, modalPastas, pastasAtivas } from '@/lib/store';
 import type { Pasta, Perfil } from '@/content/api';
 import { ContaBotao, Logo } from './Conta';
 
@@ -27,6 +27,7 @@ export function TopBar({
     gavetaAberta.set(false);
     modalPastas.set(false);
     menuHeader.set(null);
+    modalAgenda.set(false);
     pastasAtivas.set([]);
   };
 
@@ -52,6 +53,16 @@ export function TopBar({
       >
         <Logo />
         AdvoxChat
+      </button>
+
+      {/* Minha agenda (agenda, notas e etiquetas): ao lado da marca, antes das pastas. */}
+      <button
+        type="button"
+        onClick={() => exigirLogin() && modalAgenda.set(!modalAgenda.get())}
+        title="Minha agenda — atividades, notas e etiquetas"
+        className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-md text-text-2 transition hover:bg-surface-2 hover:text-brand"
+      >
+        <CalendarDays size={16} />
       </button>
 
       <span className="h-5 w-px flex-shrink-0 bg-border" />

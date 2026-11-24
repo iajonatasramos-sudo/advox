@@ -331,31 +331,15 @@ function Topbar({ user, persona, titulo, revendaInfo, onOpenNotif, onOpenPerfil,
 }
 
 function Wordmark({ compact, subtitulo }: { compact?: boolean; subtitulo?: string }) {
+  if (compact) return <img src="/brand/advox-logo.png" alt="Advox Telecom" style={{ height: 26, width: "auto", display: "block", flexShrink: 0 }} />;
   return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-      <span style={{
-        width: compact ? 30 : 34, height: compact ? 30 : 34, borderRadius: 10,
-        background: "linear-gradient(135deg, var(--navy), color-mix(in oklch, var(--navy) 70%, var(--gold)))",
-        color: "var(--navy-ink)",
-        display: "inline-flex", alignItems: "center", justifyContent: "center",
-        position: "relative", flexShrink: 0,
-        boxShadow: "0 6px 14px -6px color-mix(in oklch, var(--navy) 70%, transparent)",
-      }}>
-        <Ic.Scale size={compact ? 15 : 17} />
-        <span style={{
-          position: "absolute", bottom: -2, right: -2,
-          width: 9, height: 9, borderRadius: 99,
-          background: "var(--gold)", border: "2px solid var(--surface)",
-        }} />
-      </span>
-      <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.15, minWidth: 0 }}>
-        <span style={{ fontSize: compact ? 15 : 16, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ink)" }}>Advox</span>
-        {!compact && (
-          <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 150 }}>
-            {subtitulo ?? "CRM Telecom"}
-          </span>
-        )}
-      </span>
+    <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+      <img src="/brand/advox-logo.png" alt="Advox Telecom" style={{ height: 42, width: "auto", maxWidth: 200, objectFit: "contain", objectPosition: "left center", display: "block" }} />
+      {subtitulo && subtitulo !== "CRM Telecom" && (
+        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 190 }}>
+          {subtitulo}
+        </span>
+      )}
     </div>
   );
 }

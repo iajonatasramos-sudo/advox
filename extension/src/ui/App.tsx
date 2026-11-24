@@ -4,9 +4,9 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Session } from '@supabase/supabase-js';
-import { BookUser, ExternalLink, User, X, Zap } from 'lucide-react';
+import { BookUser, CalendarDays, ExternalLink, User, X, Zap } from 'lucide-react';
 import { cn, emPx, ALTURA_TOPBAR, LARGURA_TRILHO } from '@/lib/utils';
-import { abaGaveta, gavetaAberta, logado, modalConta, modalPastas, pastasAtivas } from '@/lib/store';
+import { abaAgenda, abaGaveta, gavetaAberta, logado, modalAgenda, modalConta, modalPastas, pastasAtivas } from '@/lib/store';
 import { APP_URL, abrirPainel, meuPerfil, nomeDaRevenda, sb, sessaoAtual, type Pasta, type Perfil } from '@/content/api';
 import { bridgeDisponivel } from '@/content/wa';
 import { DadosProvider, useDados } from './dados';
@@ -16,6 +16,7 @@ import { PastaPanel, PastasModal } from './Pastas';
 import { MensagensView } from './Mensagens';
 import { ContatoView } from './Contato';
 import { AtalhoPicker } from './Atalho';
+import { AgendaModal } from './Agenda';
 import { LoginModal, Logo } from './Conta';
 import { Toaster } from './toast';
 import { useSinal } from './sinal';
@@ -79,6 +80,7 @@ function Logado({ perfil, revenda, topbar, header }: { perfil: Perfil; revenda: 
   const aberto = useSinal(gavetaAberta);
   const ativas = useSinal(pastasAtivas);
   const pastasModal = useSinal(modalPastas);
+  const agenda = useSinal(modalAgenda);
   const headerEl = useSinal(header);
 
   // Pasta apagada some do filtro.
@@ -97,6 +99,7 @@ function Logado({ perfil, revenda, topbar, header }: { perfil: Perfil; revenda: 
 
       {ativas.length > 0 && <PastaPanel ids={ativas} />}
       {pastasModal && <PastasModal />}
+      {agenda && <AgendaModal />}
       <HeaderMenuOverlay />
       <AtalhoPicker />
       <Toaster />
@@ -149,6 +152,7 @@ function TrilhoLateral() {
       style={{ top: emPx(ALTURA_TOPBAR), width: emPx(LARGURA_TRILHO) }} onClick={cliqueLivre} title="Abrir mensagens rápidas">
       <button type="button" title="Contato / lead no Advox" className={botao(aba === 'cliente')} onClick={() => ir('cliente')}><User size={17} /></button>
       <button type="button" title="Mensagens rápidas" className={botao(aba === 'rapidas')} onClick={() => ir('rapidas')}><Zap size={17} /></button>
+      <button type="button" title="Minha agenda — atividades, notas e etiquetas" className={botao(false)} onClick={() => { abaAgenda.set('agenda'); modalAgenda.set(true); }}><CalendarDays size={17} /></button>
       <span className="my-1 h-px w-6 bg-border" />
       <button type="button" title="Painel AdvoxChat (contatos, mensagens, pastas) — abre já logado" className={botao(false)} onClick={() => abrirPainel('contatos')}><BookUser size={17} /></button>
       <a href={APP_URL} target="_blank" rel="noopener noreferrer" title="Abrir o Advox" className={botao(false)}><Logo tamanho={20} /></a>

@@ -11,12 +11,13 @@ const PAPEL: Record<string, string> = { rep: 'Representante', coord: 'Coordenado
 
 export function Logo({ tamanho = 24 }: { tamanho?: number }) {
   return (
-    <span
-      className="grid flex-shrink-0 place-items-center rounded-md text-[12px] font-extrabold text-white"
-      style={{ width: tamanho, height: tamanho, background: 'linear-gradient(135deg, #1e2a5a 0%, #3b4d9a 55%, #d6246e 100%)' }}
-    >
-      A
-    </span>
+    <img
+      src={chrome.runtime.getURL(tamanho > 24 ? 'icons/icon128.png' : 'icons/icon48.png')}
+      alt="Advox"
+      draggable={false}
+      className="flex-shrink-0 object-contain"
+      style={{ width: tamanho, height: tamanho }}
+    />
   );
 }
 

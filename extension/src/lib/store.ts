@@ -45,3 +45,7 @@ export const modalConta = criarSinal<boolean>(false);
 
 /** Logado e pronto para usar (o ⚡ do compose consulta). */
 export const logado = criarSinal<boolean>(false);
+
+/** Minha Agenda em tela cheia (botão do calendário na barra do topo) e a guia aberta. */
+export const modalAgenda = criarSinal<boolean>(false);
+export const abaAgenda = criarSinal<'agenda' | 'notas' | 'etiquetas'>('agenda');

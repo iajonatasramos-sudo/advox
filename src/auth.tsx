@@ -393,28 +393,9 @@ function AuthShell({ children, title, subtitle }: { children: React.ReactNode; t
         boxShadow: "var(--shadow-lg)",
         padding: "28px 28px 24px",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
-          <span style={{
-            width: 36, height: 36, borderRadius: 6,
-            background: "var(--navy)", color: "var(--navy-ink)",
-            display: "inline-flex", alignItems: "center", justifyContent: "center",
-            position: "relative",
-            boxShadow: "inset 0 -1px 0 oklch(0.18 0.07 255)",
-          }}>
-            <Ic.Scale size={18} />
-            <span style={{
-              position: "absolute", bottom: -2, right: -2,
-              width: 10, height: 10, borderRadius: 99,
-              background: "var(--gold)",
-              border: "2px solid var(--surface)",
-            }} />
-          </span>
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.015em" }}>
-              Advox <span style={{ color: "var(--ink-3)", fontWeight: 400 }}>Telecom</span>
-            </div>
-            <div style={{ fontSize: 11, color: "var(--ink-4)", marginTop: 1 }}>CRM Telecom + Jurídico</div>
-          </div>
+        <div style={{ marginBottom: 22 }}>
+          <img src="/brand/advox-logo.png" alt="Advox Telecom" style={{ height: 44, width: "auto", maxWidth: "100%", display: "block" }} />
+          <div style={{ fontSize: 11, color: "var(--ink-4)", marginTop: 6 }}>CRM Telecom + Jurídico</div>
         </div>
 
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600, letterSpacing: "-0.015em" }}>{title}</h1>
