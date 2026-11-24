@@ -1,0 +1,32 @@
+{
+  "name": "advox-whatsapp",
+  "private": true,
+  "version": "0.4.0",
+  "description": "Advox no WhatsApp Web — CRM do representante dentro da conversa",
+  "type": "module",
+  "scripts": {
+    "prebuild": "mkdir -p public/vendor && cp node_modules/@wppconnect/wa-js/dist/wppconnect-wa.js public/vendor/wppconnect-wa.js",
+    "build": "tsc --noEmit && vite build",
+    "dev": "npm run prebuild && vite build --watch",
+    "pacote": "npm run build && node scripts/pacote.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
+    "@wppconnect/wa-js": "4.7.2",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.452.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.5.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/chrome": "^0.0.279",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  }
+}

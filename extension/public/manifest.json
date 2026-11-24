@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "AdvoxChat — Advox no WhatsApp",
+  "description": "CRM do representante Advox dentro do WhatsApp Web: lead da conversa, anotações, atividades e indicação ao jurídico.",
+  "version": "0.4.0",
+  "action": { "default_title": "AdvoxChat" },
+  "content_scripts": [
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["content-loader.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["vendor/wppconnect-wa.js", "assets/wa-bridge.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ],
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://web.whatsapp.com/*",
+    "https://ubnceeshmwzgwarprbht.supabase.co/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "resources": ["assets/*"]
+    }
+  ]
+}

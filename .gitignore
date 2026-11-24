@@ -11,3 +11,12 @@ dist-ssr
 # Claude Code settings (local)
 .claude/
 
+
+# Extensão
+extension/node_modules
+extension/dist
+extension/public/vendor
+extension/*.zip
+
+# Cópias de build da extensão carregadas no Chrome
+extension/advox-whatsapp-*/
