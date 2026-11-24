@@ -7,7 +7,7 @@ import {
 import {
   useLiveLeads, useLiveCasos, useLiveTarefas, updateLead, createLead, toggleTarefa,
   PIPELINE_COMERCIAL_DB, PIPELINE_JURIDICO_DB, fmtBRL, parseBRL, OPERADORAS_LIST,
-  normalizaTelefone, fmtTelefone, waLink, registrarContato, MOTIVOS_PERDA, TIPOS_ATIVIDADE,
+  normalizaTelefone, fmtTelefone, waLink, registrarContato, MOTIVOS_PERDA, TIPOS_ATIVIDADE, fetchLead,
   type UiLead, type UiCaso, type UiTarefa,
 } from "./lib/data-live";
 import { useAuth } from "./auth";
@@ -561,6 +561,7 @@ export function LeadQuickView({ lead: leadProp, onClose, onOpenFull, onOpenDesbl
   const [verArquivos, setVerArquivos] = useState(false);
 
   useEffect(() => { setLead(leadProp); }, [leadProp]);
+  useEffect(() => { fetchLead(leadProp.id).then(l => { if (l) setLead(l); }); }, [leadProp.id]);
 
   const carregarNotas = async () => {
     const { data } = await supabase
@@ -623,7 +624,7 @@ export function LeadQuickView({ lead: leadProp, onClose, onOpenFull, onOpenDesbl
       background: "oklch(0.10 0.04 250 / 0.45)", backdropFilter: "blur(2px)",
       display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
     }}>
-      {editando && <NovoLeadModal lead={lead} onClose={() => setEditando(false)} />}
+      {editando && <NovoLeadModal lead={lead} onClose={() => { setEditando(false); fetchLead(lead.id).then(l => { if (l) setLead(l); }); }} />}
       {agendando && <NovaTarefaModal leadId={lead.id} onClose={() => setAgendando(false)} />}
       {perdendo && (
         <MotivoPerdaModal lead={lead} onClose={() => setPerdendo(false)} onConfirm={async (motivo) => {
@@ -794,6 +795,8 @@ export function RepLeadDetail({ lead: leadProp, onBack, onOpenDesbloq }: { lead:
   const { casos } = useLiveCasos();
   const caso = (casos ?? []).find(c => c.lead_id === lead.id);
 
+  useEffect(() => { fetchLead(leadProp.id).then(l => { if (l) setLead(l); }); }, [leadProp.id]);
+
   useEffect(() => {
     const ch = supabase.channel(`lead-detail-${lead.id}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "leads", filter: `id=eq.${lead.id}` }, (payload) => {
@@ -820,7 +823,7 @@ export function RepLeadDetail({ lead: leadProp, onBack, onOpenDesbloq }: { lead:
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {editando && <NovoLeadModal lead={lead} onClose={() => setEditando(false)} />}
+      {editando && <NovoLeadModal lead={lead} onClose={() => { setEditando(false); fetchLead(lead.id).then(l => { if (l) setLead(l); }); }} />}
       {perdendo && (
         <MotivoPerdaModal lead={lead} onClose={() => setPerdendo(false)} onConfirm={async (motivo) => {
           const { error } = await updateLead(lead.id, { status: "perdido", motivo_perda: motivo });

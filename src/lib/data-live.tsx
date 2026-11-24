@@ -171,6 +171,13 @@ export async function createLead(input: Database["public"]["Tables"]["leads"]["I
   return { data: data as unknown as UiLead | null, error: error?.message };
 }
 
+/** Busca um lead atualizado (com joins) — usado ao abrir popup/ficha para não mostrar cópia antiga. */
+export async function fetchLead(id: string): Promise<UiLead | null> {
+  const { data, error } = await supabase.from("leads").select(LEAD_SELECT).eq("id", id).maybeSingle();
+  if (error) { console.error("[Advox] fetchLead", error); return null; }
+  return data as unknown as UiLead | null;
+}
+
 export async function updateLead(id: string, patch: Partial<DbLead>) {
   const { error } = await supabase.from("leads").update(patch as never).eq("id", id);
   return { error: error?.message };
