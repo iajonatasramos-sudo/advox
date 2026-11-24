@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
-import type { Database, LeadStatus, CasoStatus, Operadora } from "./database.types";
+import type { Database, LeadStatus, CasoStatus, Operadora, TipoAtividade } from "./database.types";
 
 /* ====================================================================
  * Tipos UI (DB + joins)
@@ -268,7 +268,8 @@ export function useLiveTarefas(filter?: TarefaFilter) {
       return;
     }
     setError(null);
-    let result = (data ?? []) as unknown as UiTarefa[];
+    // Urgência derivada da data (a coluna só vale quando não há `quando`)
+    let result = ((data ?? []) as unknown as UiTarefa[]).map(t => ({ ...t, urgencia: urgenciaDe(t) }));
     if (filter?.revendaId) {
       // filtra client-side via revenda do lead (precisaria de join chain, fica mais simples assim)
       const leadIds = new Set(result.map(t => t.lead_id).filter(Boolean) as string[]);
@@ -293,6 +294,27 @@ export function useLiveTarefas(filter?: TarefaFilter) {
   return { tarefas, error, refresh: load };
 }
 
+/** Urgência a partir de `quando`: passou → atrasada; hoje; até 7 dias → semana; depois → próxima. */
+export function urgenciaDe(t: Pick<DbTarefa, "quando" | "urgencia">): DbTarefa["urgencia"] {
+  if (!t.quando) return t.urgencia;
+  const q = new Date(t.quando);
+  const agora = new Date();
+  if (q.getTime() < agora.getTime()) return "atrasada";
+  const fimHoje = new Date(agora); fimHoje.setHours(23, 59, 59, 999);
+  if (q <= fimHoje) return "hoje";
+  const em7 = new Date(fimHoje); em7.setDate(em7.getDate() + 7);
+  return q <= em7 ? "semana" : "proxima";
+}
+
+export const TIPOS_ATIVIDADE: { id: TipoAtividade; label: string }[] = [
+  { id: "ligacao",  label: "Ligação" },
+  { id: "whatsapp", label: "WhatsApp" },
+  { id: "visita",   label: "Visita" },
+  { id: "reuniao",  label: "Reunião" },
+  { id: "email",    label: "E-mail" },
+  { id: "tarefa",   label: "Tarefa" },
+];
+
 export async function createTarefa(input: Database["public"]["Tables"]["tarefas"]["Insert"]) {
   const { error } = await supabase.from("tarefas").insert(input as never);
   return { error: error?.message };
@@ -304,6 +326,52 @@ export async function toggleTarefa(id: string, completed: boolean) {
     completed_at: completed ? new Date().toISOString() : null,
   };
   const { error } = await supabase.from("tarefas").update(patch as never).eq("id", id);
+  return { error: error?.message };
+}
+
+/* ====================================================================
+ * CONTATO (telefone / WhatsApp / e-mail) e PERDA
+ * ================================================================== */
+
+export const MOTIVOS_PERDA = [
+  "Preço / proposta não competitiva",
+  "Ficou na operadora atual",
+  "Multa de fidelidade alta",
+  "Sem retorno do cliente",
+  "Fechou com concorrente",
+  "Sem perfil / não qualificado",
+  "Outro",
+] as const;
+
+/** Só dígitos; número BR sem DDI (10/11 dígitos) ganha 55 — igual à função do banco. */
+export function normalizaTelefone(v: string | null | undefined): string | null {
+  const d = (v ?? "").replace(/\D/g, "");
+  if (!d) return null;
+  return d.length === 10 || d.length === 11 ? "55" + d : d;
+}
+
+/** 5511987654321 → (11) 98765-4321 */
+export function fmtTelefone(v: string | null | undefined): string {
+  const d = (v ?? "").replace(/\D/g, "");
+  const n = d.startsWith("55") && (d.length === 12 || d.length === 13) ? d.slice(2) : d;
+  if (n.length === 11) return `(${n.slice(0, 2)}) ${n.slice(2, 7)}-${n.slice(7)}`;
+  if (n.length === 10) return `(${n.slice(0, 2)}) ${n.slice(2, 6)}-${n.slice(6)}`;
+  return v ?? "";
+}
+
+export function waLink(telefone: string, texto?: string): string {
+  const q = texto ? `?text=${encodeURIComponent(texto)}` : "";
+  return `https://wa.me/${normalizaTelefone(telefone)}${q}`;
+}
+
+/** Registra no histórico do lead que um contato foi iniciado. */
+export async function registrarContato(leadId: string, autorId: string, tipo: "ligacao" | "whatsapp" | "email", detalhe?: string) {
+  const rotulo = tipo === "ligacao" ? "Ligação iniciada" : tipo === "whatsapp" ? "Conversa no WhatsApp iniciada" : "E-mail iniciado";
+  const { error } = await supabase.from("notas").insert({
+    lead_id: leadId, autor_id: autorId, tipo, interno: false,
+    texto: detalhe ? `${rotulo} — ${detalhe}` : rotulo,
+  } as never);
+  if (error) console.error("[Advox] registrarContato", error);
   return { error: error?.message };
 }
 

@@ -7,6 +7,7 @@
 export type Papel = "admin" | "coord" | "rep" | "advogado";
 export type ContaStatus = "pendente" | "ativo" | "suspenso" | "recusado";
 export type Operadora = "Vivo" | "TIM" | "Claro" | "Oi";
+export type TipoAtividade = "ligacao" | "whatsapp" | "visita" | "reuniao" | "email" | "tarefa";
 
 export type LeadStatus =
   | "novo" | "contato" | "proposta" | "travado"
@@ -77,6 +78,10 @@ export type Database = {
           rep_id: string;              // FK profiles.id
           revenda_id: string;          // FK revendas.id
           advox_caso_id: string | null;
+          telefone: string | null;        // só dígitos com DDI (normalizado por trigger)
+          email: string | null;
+          fim_fidelidade: string | null;  // date (YYYY-MM-DD)
+          motivo_perda: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -117,6 +122,7 @@ export type Database = {
           quando: string | null;
           prioridade: "alta" | "media" | "baixa";
           urgencia: "atrasada" | "hoje" | "semana" | "proxima";
+          tipo: TipoAtividade;
           completed: boolean;
           completed_at: string | null;
           created_at: string;

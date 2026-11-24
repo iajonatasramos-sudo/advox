@@ -9,7 +9,7 @@ import {
   AdminDashboard, AdminRepresentantes, AdminAdvogados, AdminAuditoria,
   AdminTodosLeads, AdminTodosCasos, AdminConfig, AdminRevendas,
 } from "./admin";
-import { PerfilScreen, NotifPanel, RepOnboarding, ErrorScreen } from "./shared";
+import { PerfilScreen, NotifPanel } from "./shared";
 import {
   PIPELINE_COMERCIAL, PIPELINE_JURIDICO,
   type Persona, type Representante, type User as MockUser,
@@ -35,21 +35,19 @@ type NavItem = {
 const NAV: Record<Persona, NavItem[]> = {
   rep: [
     { id: "dashboard",  label: "Painel",          icon: <Ic.Dashboard size={14} /> },
-    { id: "tarefas",    label: "Tarefas",         icon: <Ic.Check size={14} />,    badge: "3" },
-    { id: "casos",      label: "Casos Jurídicos", icon: <Ic.Scale size={14} />,    badge: "7" },
-    { id: "onboarding", label: "Onboarding",      icon: <Ic.Sparkles size={14} />, sub: "estado vazio" },
-    { id: "404",        label: "Erro 404",        icon: <Ic.Warn size={14} />,    sub: "tela auxiliar" },
+    { id: "tarefas",    label: "Tarefas",         icon: <Ic.Check size={14} /> },
+    { id: "casos",      label: "Casos Jurídicos", icon: <Ic.Scale size={14} /> },
   ],
   coord: [
     { id: "dashboard", label: "Painel",            icon: <Ic.Dashboard size={14} /> },
-    { id: "time",      label: "Meu Time",          icon: <Ic.Users size={14} />,    badge: "3" },
+    { id: "time",      label: "Meu Time",          icon: <Ic.Users size={14} /> },
     { id: "leads",     label: "Leads da Equipe",   icon: <Ic.Briefcase size={14} /> },
     { id: "casos",     label: "Casos da Equipe",   icon: <Ic.Scale size={14} /> },
     { id: "tarefas",   label: "Tarefas da Equipe", icon: <Ic.Check size={14} /> },
   ],
   adv: [
     { id: "dashboard", label: "Painel",  icon: <Ic.Dashboard size={14} /> },
-    { id: "prazos",    label: "Prazos",  icon: <Ic.Calendar size={14} />, badge: "2" },
+    { id: "prazos",    label: "Prazos",  icon: <Ic.Calendar size={14} /> },
   ],
   admin: [
     { id: "dashboard",      label: "Visão Geral",     icon: <Ic.Dashboard size={14} /> },
@@ -117,8 +115,6 @@ function AppInner({ profile }: { profile: Profile }) {
       if (route === "dashboard")  return <RepDashboard onOpenLead={setOpenLead} onOpenDesbloq={() => setModal(true)} />;
       if (route === "tarefas")    return <RepTarefas />;
       if (route === "casos")      return <RepCasos onOpenLead={setOpenLead} />;
-      if (route === "onboarding") return <RepOnboarding onOpenDesbloq={() => setModal(true)} />;
-      if (route === "404")        return <ErrorScreen code={404} onBack={() => setRoute("dashboard")} />;
       if (route === "perfil")     return <PerfilScreen user={user} />;
     }
     if (persona === "coord") {
