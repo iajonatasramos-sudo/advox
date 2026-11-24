@@ -15,7 +15,7 @@ import {
   type Persona, type Representante, type User as MockUser,
 } from "./data";
 import { useLiveNotificacoes, useRevendaInfo, useApplyRevendaTheme, type UiLead as Lead, type UiCaso as Caso } from "./lib/data-live";
-import { useAuth, AuthGate, PendingApproval, AuthLoading, ProfileErrorScreen, type Profile } from "./auth";
+import { useAuth, AuthGate, PendingApproval, AuthLoading, ProfileErrorScreen, NovaSenha, type Profile } from "./auth";
 
 const PAPEL_TO_PERSONA: Record<Profile["papel"], Persona> = {
   rep: "rep",
@@ -62,7 +62,11 @@ const NAV: Record<Persona, NavItem[]> = {
 };
 
 export function App() {
-  const { loading, session, profile, profileError } = useAuth();
+  const { loading, session, profile, profileError, recuperandoSenha } = useAuth();
+
+  // Veio do link "Esqueci minha senha": primeiro define a senha nova.
+  if (recuperandoSenha && session) return <NovaSenha />;
+  if (recuperandoSenha && loading) return <AuthLoading />;
 
   // Render otimista: se já temos profile ativo do cache, mostra a app
   // imediato. onAuthStateChange confirma a session em background — se

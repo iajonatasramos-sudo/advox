@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { Session, User as AuthUser } from "@supabase/supabase-js";
-import { supabase, isSupabaseConfigured } from "./lib/supabase";
+import { supabase, isSupabaseConfigured, veioDoLinkDeRecuperacao } from "./lib/supabase";
 import type { Database } from "./lib/database.types";
 import { Ic } from "./icons";
 import { Btn, Input, Field } from "./ui";
@@ -21,6 +21,9 @@ type AuthState = {
   resetPassword: (email: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   reloadProfile: () => Promise<void>;
+  /** Entrou pelo link de recuperação: precisa definir a senha nova antes de usar o app. */
+  recuperandoSenha: boolean;
+  concluirRecuperacao: () => void;
 };
 
 const AuthCtx = createContext<AuthState | null>(null);
@@ -97,6 +100,11 @@ async function fetchProfileWithRetry(userId: string, attempt = 1): Promise<Profi
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [recuperandoSenha, setRecuperandoSenha] = useState(veioDoLinkDeRecuperacao);
+  const concluirRecuperacao = () => {
+    setRecuperandoSenha(false);
+    window.history.replaceState(null, "", "/");
+  };
   // Restaura profile cacheado sincronamente — UI renderiza imediato.
   // Session continua sendo confirmada por onAuthStateChange.
   const [loading, setLoading] = useState(true);
@@ -199,6 +207,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (!mounted) return;
       console.log("[Advox] onAuthStateChange", event, { hasSession: !!newSession });
+      if (event === "PASSWORD_RECOVERY") setRecuperandoSenha(true);
+      // Link vencido/já usado: não há sessão — esquece a recuperação para o login normal.
+      else if (!newSession) setRecuperandoSenha(false);
       setSession(newSession);
 
       const userId = newSession?.user?.id;
@@ -322,7 +333,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     clearCachedProfile();
     clearLiveCache(); // evita que o próximo usuário da aba veja dados do anterior
-    await supabase.auth.signOut();
+    try { localStorage.removeItem("advox-impersonacao"); localStorage.removeItem("advox-impersonacao-lista"); } catch { /* ignore */ }
+    // scope local: sair do app não derruba a sessão da extensão AdvoxChat no WhatsApp.
+    await supabase.auth.signOut({ scope: "local" });
     setProfile(null);
   };
 
@@ -334,6 +347,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthCtx.Provider value={{
       loading, session, user: session?.user ?? null, profile, profileError,
       signIn, signUpRep, signInWithGoogle, resetPassword, signOut, reloadProfile,
+      recuperandoSenha, concluirRecuperacao,
     }}>
       {children}
     </AuthCtx.Provider>
@@ -461,9 +475,10 @@ function ErrorMsg({ children }: { children: React.ReactNode }) {
       borderRadius: 5,
       fontSize: 12.5,
       marginBottom: 14,
-      display: "flex", alignItems: "center", gap: 8,
+      display: "flex", alignItems: "flex-start", gap: 8, wordBreak: "break-word",
     }}>
-      <Ic.Warn size={13} /> {children}
+      <span style={{ flexShrink: 0, display: "inline-flex", marginTop: 2 }}><Ic.Warn size={13} /></span>
+      <span style={{ flex: 1, minWidth: 0, lineHeight: 1.5 }}>{children}</span>
     </div>
   );
 }
@@ -478,9 +493,10 @@ function SuccessMsg({ children }: { children: React.ReactNode }) {
       borderRadius: 5,
       fontSize: 12.5,
       marginBottom: 14,
-      display: "flex", alignItems: "center", gap: 8,
+      display: "flex", alignItems: "flex-start", gap: 8, wordBreak: "break-word",
     }}>
-      <Ic.CheckCircle size={13} /> {children}
+      <span style={{ flexShrink: 0, display: "inline-flex", marginTop: 2 }}><Ic.CheckCircle size={13} /></span>
+      <span style={{ flex: 1, minWidth: 0, lineHeight: 1.5 }}>{children}</span>
     </div>
   );
 }
@@ -872,6 +888,60 @@ function ForgotPassword({ onBack }: { onBack: () => void }) {
           background: "transparent", border: 0, color: "var(--navy)",
           fontWeight: 600, cursor: "pointer", padding: 0,
         }}>← Voltar ao login</button>
+      </div>
+    </AuthShell>
+  );
+}
+
+/* === Defina sua nova senha (depois de clicar no link do e-mail) === */
+export function NovaSenha() {
+  const { user, concluirRecuperacao, signOut } = useAuth();
+  const [nova, setNova] = useState("");
+  const [confirma, setConfirma] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [ok, setOk] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr(null);
+    if (nova.length < 6) { setErr("A senha precisa ter pelo menos 6 caracteres."); return; }
+    if (nova !== confirma) { setErr("As duas senhas não são iguais."); return; }
+    setBusy(true);
+    const { error } = await supabase.auth.updateUser({ password: nova });
+    setBusy(false);
+    if (error) { setErr(humanizeAuthError(error.message)); return; }
+    console.log("[Advox] senha redefinida pelo link de recuperação");
+    setOk(true);
+  };
+
+  if (ok) {
+    return (
+      <AuthShell title="Senha alterada">
+        <SuccessMsg>Pronto! A partir de agora entre com <strong>{user?.email}</strong> e a senha nova.</SuccessMsg>
+        <Btn variant="primary" onClick={concluirRecuperacao} style={{ width: "100%", justifyContent: "center", padding: "10px 16px", marginTop: 4 }}>Ir para o Advox</Btn>
+      </AuthShell>
+    );
+  }
+
+  return (
+    <AuthShell title="Defina sua nova senha" subtitle={user?.email ? `Conta ${user.email}` : undefined}>
+      {err && <ErrorMsg>{err}</ErrorMsg>}
+      <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <Field label="Nova senha" hint="Mínimo 6 caracteres.">
+          <Input full type="password" value={nova} onChange={e=>setNova(e.target.value)} placeholder="••••••••" />
+        </Field>
+        <Field label="Confirmar nova senha">
+          <Input full type="password" value={confirma} onChange={e=>setConfirma(e.target.value)} placeholder="••••••••" />
+        </Field>
+        <Btn variant="primary" type="submit" disabled={busy || !nova || !confirma} style={{ width: "100%", justifyContent: "center", padding: "10px 16px", marginTop: 4 }}>
+          {busy ? "Salvando…" : "Salvar nova senha"}
+        </Btn>
+      </form>
+      <div style={{ textAlign: "center", marginTop: 22, fontSize: 12.5 }}>
+        <button type="button" onClick={async () => { await signOut(); concluirRecuperacao(); }} style={{
+          background: "transparent", border: 0, color: "var(--navy)", fontWeight: 600, cursor: "pointer", padding: 0,
+        }}>Cancelar e voltar ao login</button>
       </div>
     </AuthShell>
   );
