@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Ic } from "./icons";
 import {
-  Btn, Badge, StatusPill, Avatar, KPI, Input, OperadoraTag, Section, Empty,
+  Btn, Badge, StatusPill, Avatar, KPI, Input, OperadoraTag, Section, Empty, Funil,
 } from "./ui";
 import { RepKanban, RepLista, TarefaRowLive } from "./rep";
 import { useAuth } from "./auth";
@@ -47,7 +47,7 @@ function useRevendaNome(revendaId: string | null | undefined) {
 }
 
 /* === Dashboard === */
-export function CoordDashboard({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) {
+export function CoordDashboard({ onOpenLead, onIr }: { onOpenLead: (l: UiLead) => void; onIr?: (rota: string) => void }) {
   const { profile } = useAuth();
   const revendaId = profile?.revenda_id ?? undefined;
   const revendaNome = useRevendaNome(revendaId);
@@ -69,111 +69,129 @@ export function CoordDashboard({ onOpenLead }: { onOpenLead: (l: UiLead) => void
       });
   }, [revendaId, leads?.length, teamCacheKey]);
 
+  const lista = leads ?? [];
   const tarefasAtrasadas = (tarefas ?? []).filter(t => t.urgencia === "atrasada" && !t.completed);
-  const ativos = (leads ?? []).filter(l => !["fechado","perdido"].includes(l.status)).length;
-  const fechados = (leads ?? []).filter(l => l.status === "fechado");
-  const valor = fechados.reduce((s, l) => s + Number(l.valor || 0), 0);
-  const conversao = (leads?.length ?? 0) > 0 ? Math.round((fechados.length / (leads?.length ?? 1)) * 100) : 0;
+  const abertos = lista.filter(l => !["fechado", "perdido"].includes(l.status));
+  const emAberto = abertos.reduce((s, l) => s + Number(l.valor || 0), 0);
+  const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0, 0, 0, 0);
+  const fechadosMes = lista.filter(l => l.status === "fechado" && new Date(l.updated_at ?? l.created_at) >= inicioMes);
+  const valorMes = fechadosMes.reduce((s, l) => s + Number(l.valor || 0), 0);
+  const noJuridico = (casos ?? []).filter(c => !["liberado", "naoliberado", "recusou"].includes(c.status)).length;
+  const pendentes = (team ?? []).filter(t => t.status === "pendente").length;
+  const ativosTime = (team ?? []).filter(t => t.status === "ativo");
 
-  // Ranking por valor fechado
-  const ranking = (team ?? [])
-    .filter(r => r.status === "ativo")
+  const porConsultor = ativosTime
     .map(r => {
-      const repLeads = (leads ?? []).filter(l => l.rep?.nome === r.nome || l.rep?.id === r.id);
+      const repLeads = lista.filter(l => l.rep?.id === r.id || l.rep?.nome === r.nome);
       const fech = repLeads.filter(l => l.status === "fechado");
-      const v = fech.reduce((s, l) => s + Number(l.valor || 0), 0);
-      const ativosR = repLeads.filter(l => !["fechado","perdido"].includes(l.status)).length;
-      const conv = repLeads.length ? Math.round((fech.length / repLeads.length) * 100) : 0;
-      return { rep: r, ativos: ativosR, fechados: fech.length, valor: v, conv };
+      return {
+        rep: r,
+        abertos: repLeads.filter(l => !["fechado", "perdido"].includes(l.status)).length,
+        fechados: fech.length,
+        valor: fech.reduce((s, l) => s + Number(l.valor || 0), 0),
+        atrasadas: tarefasAtrasadas.filter(t => t.autor_id === r.id).length,
+      };
     })
-    .sort((a, b) => b.valor - a.valor);
+    .sort((a, b) => b.valor - a.valor || b.abertos - a.abertos);
 
   const { info: revendaInfo } = useRevendaInfo(revendaId);
   const [showBranding, setShowBranding] = useState(false);
+  const hojeTxt = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+  const hoje = hojeTxt.charAt(0).toUpperCase() + hojeTxt.slice(1);
+
+  const pendencias: { texto: string; tom: string; acao?: { rotulo: string; rota: string } }[] = [];
+  if (tarefasAtrasadas.length) pendencias.push({ texto: `${tarefasAtrasadas.length} ${tarefasAtrasadas.length === 1 ? "tarefa atrasada" : "tarefas atrasadas"} no time`, tom: "var(--rose)", acao: { rotulo: "Ver tarefas", rota: "tarefas" } });
+  if (pendentes) pendencias.push({ texto: `${pendentes} ${pendentes === 1 ? "consultor esperando" : "consultores esperando"} aprovação`, tom: "var(--amber)", acao: { rotulo: "Aprovar", rota: "time" } });
+  const parados = abertos.filter(l => !l.proximo).length;
+  if (parados) pendencias.push({ texto: `${parados} ${parados === 1 ? "lead sem próximo passo" : "leads sem próximo passo"}`, tom: "var(--ink-4)", acao: { rotulo: "Ver leads", rota: "leads" } });
 
   return (
-    <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
-      <div>
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14, gap: 12 }}>
-          <div>
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>
-              Bom dia{profile?.nome ? `, ${profile.nome.split(" ")[0]}` : ""}.
-            </h1>
-            <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
-              <strong style={{ color: "var(--ink)" }}>{revendaNome ?? "sua revenda"}</strong> · {(team ?? []).filter(t => t.status === "ativo").length} consultores ativos · {leads?.length ?? 0} leads
-              {tarefasAtrasadas.length > 0 && <> · <strong style={{ color: "var(--rose)" }}>{tarefasAtrasadas.length} tarefas atrasadas</strong></>}
-            </div>
-          </div>
-          {revendaInfo && profile?.papel === "proprietario" && (
-            <Btn variant="default" size="sm" icon={<Ic.Settings size={13} />} onClick={() => setShowBranding(true)}>
-              Branding da revenda
-            </Btn>
-          )}
+    <div className="page-pad" style={{ padding: "22px 24px", display: "flex", flexDirection: "column", gap: 16, maxWidth: 1240 }}>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <h1 className="page-title" style={{ margin: 0, fontSize: 28, fontWeight: 600 }}>{revendaNome ?? "Sua revenda"}</h1>
+          <div style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 2 }}>{hoje}</div>
         </div>
-        <div className="grid-kpi" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-          <KPI label="Leads ativos do time" valor={String(ativos)} delta={`${leads?.length ?? 0} no total`} trend="neutral" icon={<Ic.Briefcase size={14} />} />
-          <KPI label="Fechados no mês" valor={String(fechados.length)} delta={fmtBRL(valor)} trend={fechados.length > 0 ? "up" : "neutral"} icon={<Ic.Money size={14} />} />
-          <KPI label="Conversão média" valor={`${conversao}%`} delta="leads → fechados" trend={conversao >= 30 ? "up" : "neutral"} icon={<Ic.Spark size={14} />} />
-          <KPI label="Casos no Advox" valor={String(casos?.length ?? 0)} delta={`${(casos ?? []).filter(c => c.status === "liberado").length} liberados`} trend="neutral" icon={<Ic.Scale size={14} />} />
-        </div>
+        {revendaInfo && profile?.papel === "proprietario" && (
+          <Btn variant="default" size="sm" icon={<Ic.Settings size={13} />} onClick={() => setShowBranding(true)}>
+            Logo e cor da revenda
+          </Btn>
+        )}
       </div>
 
-      <div className="grid-2col" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 14 }}>
-        <Section title="Ranking do time" subtitle="ordenado por valor fechado" noPad>
-          {ranking.length === 0 ? (
-            <Empty icon={<Ic.Users size={18} />} title="Sem ranking ainda" hint="Quando consultores ativos tiverem leads fechados, aparecem aqui." />
-          ) : ranking.map((r, i) => (
-            <div key={r.rep.id} style={{
-              display: "grid",
-              gridTemplateColumns: "32px 1fr 80px 80px 80px 110px 24px",
-              gap: 12, alignItems: "center",
-              padding: "12px 16px",
-              borderBottom: i < ranking.length - 1 ? "1px solid var(--line)" : 0,
-              fontSize: 12.5,
-            }}>
-              <span className="mono" style={{ fontSize: 13, fontWeight: 600, color: i === 0 ? "var(--gold-deep)" : "var(--ink-3)" }}>
-                #{i + 1}
-              </span>
-              <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
-                <Avatar name={r.rep.nome} size={28} />
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 500, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.rep.nome}</div>
-                  <div style={{ fontSize: 11, color: "var(--ink-4)" }}>{r.rep.cidade}{r.rep.uf ? `/${r.rep.uf}` : ""}</div>
-                </div>
-              </div>
-              <div><div className="mono" style={{ fontWeight: 600 }}>{r.ativos}</div><div style={{ fontSize: 10, color: "var(--ink-4)", textTransform: "uppercase" }}>ativos</div></div>
-              <div><div className="mono" style={{ fontWeight: 600 }}>{r.fechados}</div><div style={{ fontSize: 10, color: "var(--ink-4)", textTransform: "uppercase" }}>fechados</div></div>
-              <div><div className="mono" style={{ fontWeight: 600, color: r.conv >= 30 ? "var(--green)" : "var(--ink-2)" }}>{r.conv}%</div><div style={{ fontSize: 10, color: "var(--ink-4)", textTransform: "uppercase" }}>conv.</div></div>
-              <div className="mono" style={{ fontWeight: 600, textAlign: "right" }}>{fmtBRL(r.valor)}</div>
-              <Ic.Chevron size={13} color="var(--ink-4)" />
+      <section style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 18 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "14px 40px", alignItems: "baseline" }}>
+          <div>
+            <div style={{ fontSize: 14, color: "var(--ink-3)" }}>Em negociação</div>
+            <div className="titulo mono" style={{ fontSize: 40, fontWeight: 600, lineHeight: 1.1 }}>{fmtBRL(emAberto)}</div>
+            <div style={{ fontSize: 13, color: "var(--ink-3)" }}>{abertos.length} {abertos.length === 1 ? "lead aberto" : "leads abertos"}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 14, color: "var(--ink-3)" }}>Fechado em {new Date().toLocaleDateString("pt-BR", { month: "long" })}</div>
+            <div className="titulo mono" style={{ fontSize: 28, fontWeight: 600, lineHeight: 1.1, color: valorMes ? "var(--green)" : "var(--ink)" }}>{fmtBRL(valorMes)}</div>
+            <div style={{ fontSize: 13, color: "var(--ink-3)" }}>{fechadosMes.length} {fechadosMes.length === 1 ? "contrato" : "contratos"}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 14, color: "var(--ink-3)" }}>No jurídico</div>
+            <div className="titulo mono" style={{ fontSize: 28, fontWeight: 600, lineHeight: 1.1 }}>{noJuridico}</div>
+            <div style={{ fontSize: 13, color: "var(--ink-3)" }}>{noJuridico === 1 ? "cliente sendo desbloqueado" : "clientes sendo desbloqueados"}</div>
+          </div>
+        </div>
+        <Funil leads={lista} onEtapa={onIr ? () => onIr("leads") : undefined} />
+      </section>
+
+      <div className="grid-2col" style={{ display: "grid", gridTemplateColumns: "minmax(0, 3fr) minmax(0, 2fr)", gap: 16, alignItems: "start" }}>
+        <Section title="Consultores" subtitle="Quem mais fechou aparece primeiro" noPad>
+          {porConsultor.length === 0 ? (
+            <Empty icon={<Ic.Users size={18} />} title="Nenhum consultor ativo" hint="Convide consultores em Meu time." />
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--line)" }}>
+                  {["Consultor", "Abertos", "Fechados", "Valor fechado"].map((h, i) => (
+                    <th key={h} style={{ textAlign: i === 0 ? "left" : "right", padding: "10px 16px", fontWeight: 500, color: "var(--ink-3)", fontSize: 13 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {porConsultor.map((r, i) => (
+                  <tr key={r.rep.id} style={{ borderBottom: i < porConsultor.length - 1 ? "1px solid var(--line)" : 0 }}>
+                    <td style={{ padding: "11px 16px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                        <Avatar name={r.rep.nome} size={30} />
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.rep.nome}</div>
+                          {r.atrasadas > 0
+                            ? <div style={{ fontSize: 13, color: "var(--rose)" }}>{r.atrasadas} {r.atrasadas === 1 ? "tarefa atrasada" : "tarefas atrasadas"}</div>
+                            : r.rep.cidade && <div style={{ fontSize: 13, color: "var(--ink-3)" }}>{r.rep.cidade}{r.rep.uf ? `/${r.rep.uf}` : ""}</div>}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="mono" style={{ padding: "11px 16px", textAlign: "right" }}>{r.abertos}</td>
+                    <td className="mono" style={{ padding: "11px 16px", textAlign: "right" }}>{r.fechados}</td>
+                    <td className="mono" style={{ padding: "11px 16px", textAlign: "right", fontWeight: 600 }}>{fmtBRL(r.valor)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Section>
+
+        <Section title="Pede sua atenção" noPad>
+          {pendencias.length === 0 ? (
+            <div style={{ padding: "16px 18px", fontSize: 14, color: "var(--ink-3)" }}>Tudo em dia no time.</div>
+          ) : pendencias.map((p, i) => (
+            <div key={p.texto} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: i < pendencias.length - 1 ? "1px solid var(--line)" : 0 }}>
+              <span style={{ width: 4, alignSelf: "stretch", borderRadius: 2, background: p.tom }} />
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{p.texto}</span>
+              {p.acao && onIr && <Btn size="sm" variant="ghost" onClick={() => onIr(p.acao!.rota)}>{p.acao.rotulo}</Btn>}
             </div>
           ))}
         </Section>
-
-        <Section title="Atenção" subtitle="o que precisa de você hoje" noPad>
-          <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--line)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <span style={{ width: 8, height: 8, borderRadius: 99, background: "var(--rose)" }} />
-              <span style={{ fontSize: 12.5, fontWeight: 600 }}>{tarefasAtrasadas.length} tarefas atrasadas</span>
-            </div>
-            <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginLeft: 16 }}>
-              Acumuladas pelos consultores do time
-            </div>
-          </div>
-          <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--line)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <span style={{ width: 8, height: 8, borderRadius: 99, background: "var(--amber)" }} />
-              <span style={{ fontSize: 12.5, fontWeight: 600 }}>{(team ?? []).filter(t => t.status === "pendente").length} aprovações pendentes</span>
-            </div>
-            <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginLeft: 16 }}>
-              Consultores aguardando aprovação
-            </div>
-          </div>
-        </Section>
       </div>
 
-      <Section title="Leads recentes do time" noPad>
-        <RepLista filter="" onOpenLead={onOpenLead} leads={(leads ?? []).slice(0, 6)} />
+      <Section title="Últimos leads do time" right={onIr && <Btn size="sm" variant="ghost" onClick={() => onIr("leads")}>Ver todos</Btn>} noPad>
+        <RepLista filter="" onOpenLead={onOpenLead} leads={lista.slice(0, 6)} semMoldura />
       </Section>
 
       {showBranding && revendaInfo && (
@@ -208,9 +226,8 @@ export function CoordLeads({ onOpenLead, focusRep, onClearFocus }: {
     <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
       <header style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>
-            Leads da Equipe
-            {focusRep && <span style={{ fontSize: 14, color: "var(--ink-3)", fontWeight: 400, marginLeft: 10 }}>· pipeline de {focusRep}</span>}
+          <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>
+            {focusRep ? `Leads de ${focusRep}` : "Leads da equipe"}
           </h1>
           <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
             {leads === null ? "Carregando…" : `${filtered.length} leads ${selectedRep !== "Todos" ? `com ${selectedRep}` : `de ${reps.length} consultores`}`}
@@ -273,7 +290,7 @@ export function CoordCasos({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) 
   return (
     <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
       <header>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Leads no Jurídico</h1>
+        <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>Leads no jurídico</h1>
         <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
           {casos === null ? "Carregando…" : `${all.length} casos da sua revenda no escritório Advox`}
         </div>
@@ -290,13 +307,13 @@ export function CoordCasos({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) 
         {casos === null ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>Carregando…</div>
         ) : all.length === 0 ? (
-          <Empty icon={<Ic.Scale size={20} />} title="Nenhum caso ainda" hint="Casos aparecem aqui quando consultores do seu time usarem o botão 'Desbloquear Cliente' nos leads." />
+          <Empty icon={<Ic.Scale size={20} />} title="Nenhum caso ainda" hint="Quando alguém do time usar Desbloquear cliente num lead, o caso aparece aqui." />
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
             <thead>
               <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--line)" }}>
-                {["Caso", "Cliente", "Status", "Advogado", "Multa", ""].map(h => (
-                  <th key={h} style={{ textAlign: "left", padding: "9px 12px", fontWeight: 500, color: "var(--ink-3)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                {["Cliente", "Etapa", "Advogado", "Multa", ""].map(h => (
+                  <th key={h} style={{ textAlign: "left", padding: "9px 12px", fontWeight: 500, color: "var(--ink-3)", fontSize: 13 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -306,7 +323,6 @@ export function CoordCasos({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) 
                 return (
                   <tr key={c.id} onClick={() => lead && onOpenLead(lead)} style={{ borderBottom: "1px solid var(--line)", cursor: lead ? "pointer" : "default" }}
                     onMouseEnter={e=>e.currentTarget.style.background="var(--hover)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                    <td style={{ padding: "10px 12px" }}><span className="mono" style={{ fontWeight: 500 }}>{c.id.slice(0, 8)}</span></td>
                     <td style={{ padding: "10px 12px" }}>
                       <div style={{ fontWeight: 500 }}>{c.lead?.empresa ?? "—"}</div>
                       <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{c.lead?.contato ?? ""}</div>
@@ -331,7 +347,7 @@ export function CoordTarefas() {
   const { profile } = useAuth();
   const { tarefas } = useLiveTarefas({});
   const groups = [
-    { id: "atrasada", label: "Atrasadas — pendentes do time", color: "var(--rose)" },
+    { id: "atrasada", label: "Atrasadas", color: "var(--rose)" },
     { id: "hoje", label: "Para hoje", color: "var(--amber)" },
     { id: "semana", label: "Esta semana", color: "var(--navy)" },
     { id: "proxima", label: "Próximas", color: "var(--ink-3)" },
@@ -339,9 +355,9 @@ export function CoordTarefas() {
   return (
     <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
       <header>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Tarefas da Equipe</h1>
+        <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>Tarefas da equipe</h1>
         <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
-          {tarefas === null ? "Carregando…" : `${(tarefas ?? []).length} tarefas · ${(tarefas ?? []).filter(t => t.urgencia === "atrasada" && !t.completed).length} atrasadas`}
+          {tarefas === null ? "Carregando…" : `${(tarefas ?? []).length} tarefas, ${(tarefas ?? []).filter(t => t.urgencia === "atrasada" && !t.completed).length} atrasadas`}
         </div>
       </header>
 

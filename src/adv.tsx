@@ -34,11 +34,11 @@ export function AdvDashboard({ onOpenCaso }: { onOpenCaso: (c: UiCaso) => void }
       <div>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>
-              Bom dia{profile?.nome ? `, ${profile.nome.split(" ")[0]}` : ""}.
+            <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>
+              Seus casos
             </h1>
             <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
-              {casos === null ? "Carregando…" : <>{(casos ?? []).length} casos sob sua responsabilidade{overdue.length > 0 && <> · <strong style={{ color: "var(--rose)" }}>{overdue.length} casos parados há mais de 5 dias</strong></>}</>}
+              {casos === null ? "Carregando…" : <>{(casos ?? []).length} {(casos ?? []).length === 1 ? "caso atribuído a você" : "casos atribuídos a você"}{overdue.length > 0 && <>, <strong style={{ color: "var(--rose)" }}>{overdue.length} sem andamento há mais de 5 dias</strong></>}</>}
             </div>
           </div>
         </div>
@@ -66,7 +66,7 @@ export function AdvDashboard({ onOpenCaso }: { onOpenCaso: (c: UiCaso) => void }
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{overdue.length} casos parados há mais de 5 dias</div>
             <div style={{ fontSize: 12, color: "var(--ink-2)", marginTop: 2 }}>
-              {overdue.slice(0, 3).map(c => `${c.id.slice(0,8)} · ${c.lead?.empresa ?? "—"}`).join(" · ")}
+              {overdue.slice(0, 3).map(c => c.lead?.empresa ?? "Cliente sem nome").join(", ")}{overdue.length > 3 ? ` e mais ${overdue.length - 3}` : ""}
             </div>
           </div>
         </div>
@@ -103,7 +103,7 @@ function AdvKanban({ onOpenCaso, casos }: { onOpenCaso: (c: UiCaso) => void; cas
   if (casos.length === 0) {
     return (
       <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6 }}>
-        <Empty icon={<Ic.Scale size={20} />} title="Nenhum caso atribuído ainda" hint="Quando representantes indicarem clientes via 'Desbloquear Cliente', os casos aparecem aqui após atribuição do Admin." />
+        <Empty icon={<Ic.Scale size={20} />} title="Nenhum caso atribuído ainda" hint="Os clientes indicados pelas revendas aparecem aqui assim que o administrador designar você." />
       </div>
     );
   }
@@ -187,11 +187,11 @@ function CasoCard({ caso, onClick, onDragStart, onDragEnd, isDragging }: {
         transition: "box-shadow 80ms, opacity 100ms",
       }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span className="mono" style={{ fontSize: 10.5, color: "var(--ink-3)", fontWeight: 500 }}>{caso.id.slice(0, 8)}</span>
+        <span style={{ fontSize: 13, color: "var(--ink-3)" }}>{caso.lead?.uf ?? ""}</span>
         {caso.lead?.operadora && <OperadoraTag op={caso.lead.operadora} />}
       </div>
       <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{caso.lead?.empresa ?? "—"}</div>
-      <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>{caso.lead?.contato}{caso.lead?.uf ? ` · ${caso.lead.uf}` : ""}</div>
+      <div style={{ fontSize: 13, color: "var(--ink-3)" }}>{caso.lead?.contato}</div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 6, borderTop: "1px dashed var(--line)", marginTop: 2 }}>
         <span style={{ fontSize: 11, color: overdue ? "var(--rose)" : "var(--ink-3)", display: "inline-flex", alignItems: "center", gap: 4, fontWeight: overdue ? 500 : 400 }}>
           <Ic.Clock size={10} /> {caso.dias_indicacao}d desde indicação
@@ -227,12 +227,10 @@ export function AdvCasoDetail({ caso: casoProp, onBack }: { caso: UiCaso; onBack
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ padding: "12px 18px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 10, background: "var(--surface-2)" }}>
         <button onClick={onBack} style={{ background: "transparent", border: 0, color: "var(--ink-2)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, padding: 4, fontSize: 12.5 }}>
-          <Ic.ArrowLeft size={13} /> Pipeline
+          <Ic.ArrowLeft size={13} /> Casos
         </button>
         <span style={{ color: "var(--ink-4)" }}>/</span>
-        <span className="mono" style={{ fontSize: 12, color: "var(--ink-3)" }}>{caso.id.slice(0, 8)}</span>
-        <span style={{ color: "var(--ink-4)" }}>·</span>
-        <span style={{ fontSize: 13, color: "var(--ink)" }}>{caso.lead?.empresa ?? "—"}</span>
+        <span style={{ fontSize: 14, color: "var(--ink)" }}>{caso.lead?.empresa ?? "Cliente sem nome"}</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
           <span style={{ fontSize: 11.5, color: "var(--ink-3)" }}>SLA atual</span>
           <span style={{
@@ -250,8 +248,7 @@ export function AdvCasoDetail({ caso: casoProp, onBack }: { caso: UiCaso; onBack
         <div style={{ overflow: "auto", padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
           <div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 8 }}>
-              <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>{caso.lead?.empresa ?? "—"}</h1>
-              <span className="mono" style={{ fontSize: 12, color: "var(--ink-4)" }}>{caso.id.slice(0, 8)}</span>
+              <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>{caso.lead?.empresa ?? "—"}</h1>
             </div>
             <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
               <StatusPill stage={caso.status} pipeline={PIPELINE_JURIDICO_DB} />
@@ -408,14 +405,14 @@ export function AdvPrazos() {
   return (
     <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
       <header>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Prazos</h1>
+        <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>Prazos</h1>
         <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>{prazos === null ? "Carregando…" : `${prazos.length} prazos vinculados aos seus casos`}</div>
       </header>
 
       {prazos === null ? <div style={{ padding: 40, textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>Carregando…</div>
         : prazos.length === 0 ? (
           <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6 }}>
-            <Empty icon={<Ic.Calendar size={20} />} title="Nenhum prazo ainda" hint="Prazos podem ser cadastrados no detalhe de cada caso (em breve)." />
+            <Empty icon={<Ic.Calendar size={20} />} title="Nenhum prazo ainda" hint="Os prazos dos seus casos vão aparecer aqui." />
           </div>
         ) : (
           <Section title="Próximos prazos" noPad>
@@ -428,12 +425,12 @@ export function AdvPrazos() {
                   flexShrink: 0,
                 }}>
                   <span style={{ fontSize: 14, fontWeight: 700 }} className="mono">{parseDateOnly(p.data).getDate()}</span>
-                  <span style={{ fontSize: 9, textTransform: "uppercase" }}>{["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"][parseDateOnly(p.data).getMonth()]}</span>
+                  <span style={{ fontSize: 9 }}>{["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"][parseDateOnly(p.data).getMonth()]}</span>
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 500 }}>{p.tipo}</div>
                   <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginTop: 3 }}>
-                    <span className="mono">{p.caso_id.slice(0, 8)}</span> {p.local && `· ${p.local}`}
+                    {p.local ?? ""}
                   </div>
                 </div>
                 <Badge>{p.status}</Badge>

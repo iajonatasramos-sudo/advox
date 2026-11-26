@@ -40,10 +40,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
       }}>
         <div style={{ maxWidth: 720, margin: "0 auto" }}>
           <h1 style={{ fontSize: 22, marginBottom: 10, color: "oklch(0.45 0.18 25)" }}>
-            Algo quebrou no render
+            Algo deu errado nesta tela
           </h1>
           <p style={{ fontSize: 13.5, color: "oklch(0.40 0.02 250)", marginBottom: 16, lineHeight: 1.5 }}>
-            Um erro estourou enquanto a interface era construída. O conteúdo abaixo é diagnóstico — copia e cola pro Claude se ele estiver te ajudando.
+            Recarregue a página. Se o problema continuar, copie o texto abaixo e envie para o suporte da Advox Telecom.
           </p>
 
           <div style={{

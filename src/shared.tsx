@@ -51,7 +51,7 @@ export function PerfilScreen({ user }: { user: User }) {
   return (
     <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16, maxWidth: 980 }}>
       <header>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Perfil</h1>
+        <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>Perfil</h1>
         <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>Suas informações, segurança e preferências</div>
       </header>
 
@@ -340,15 +340,14 @@ export function RepOnboarding({ onOpenDesbloq }: { onOpenDesbloq: () => void }) 
       <div>
         <h1 style={{ margin: 0, fontSize: 26, fontWeight: 600, letterSpacing: "-0.02em" }}>Bem-vindo ao Advox.</h1>
         <div style={{ marginTop: 6, color: "var(--ink-2)", fontSize: 14, maxWidth: 640, lineHeight: 1.55 }}>
-          Antes de mostrar seu painel, escolha como quer começar — você pode usar
-          os três caminhos abaixo agora ou quando quiser.
+          Escolha por onde começar. Os três caminhos ficam disponíveis depois também.
         </div>
       </div>
       <div className="grid-3col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
         <OnbCard icon={<Ic.Unlock size={22} />} highlight
           titulo="Já tenho um cliente preso"
-          desc="Use o botão DESBLOQUEAR CLIENTE para indicar agora um caso ao escritório."
-          cta={<Btn variant="gold" size="sm" icon={<Ic.Unlock size={12} />} onClick={onOpenDesbloq}>Desbloquear Cliente</Btn>}
+          desc="Use Desbloquear cliente para indicar um caso ao escritório."
+          cta={<Btn variant="gold" size="sm" icon={<Ic.Unlock size={12} />} onClick={onOpenDesbloq}>Desbloquear cliente</Btn>}
         />
         <OnbCard icon={<Ic.Plus size={22} />}
           titulo="Cadastrar primeiro lead"
@@ -365,9 +364,9 @@ export function RepOnboarding({ onOpenDesbloq }: { onOpenDesbloq: () => void }) 
       <Section title="O básico que você precisa saber">
         <ol style={{ margin: 0, paddingLeft: 20, color: "var(--ink-2)", fontSize: 13, lineHeight: 1.7 }}>
           <li>O sistema é <strong style={{ color: "var(--ink)" }}>100% grátis para você</strong>. Honorários, se houver êxito, são pagos pelo cliente final.</li>
-          <li>O botão <strong style={{ color: "var(--ink)" }}>DESBLOQUEAR CLIENTE</strong> fica sempre visível no topo.</li>
+          <li>O botão <strong style={{ color: "var(--ink)" }}>Desbloquear cliente</strong> fica sempre visível no topo.</li>
           <li>Quando um cliente vai para o escritório, ele continua no seu pipeline na coluna <strong style={{ color: "var(--ink)" }}>Travado (Advox)</strong>.</li>
-          <li>Conforme o jurídico avança, você é notificado e o caso volta para <strong style={{ color: "var(--ink)" }}>Negociação Final</strong>.</li>
+          <li>Conforme o jurídico avança, você é notificado e o caso volta para <strong style={{ color: "var(--ink)" }}>Negociação final</strong>.</li>
         </ol>
       </Section>
     </div>

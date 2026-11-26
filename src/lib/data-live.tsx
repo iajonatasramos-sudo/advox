@@ -640,27 +640,27 @@ export async function meusAceites(userId: string) {
 export const OPERADORAS_LIST: Operadora[] = ["Vivo", "TIM", "Claro", "Oi"];
 
 export const PIPELINE_COMERCIAL_DB = [
-  { id: "novo" as const,        label: "Novo Lead",            color: "var(--pc-novo)" },
-  { id: "contato" as const,     label: "Em Contato",           color: "var(--pc-contato)" },
-  { id: "proposta" as const,    label: "Proposta Enviada",     color: "var(--pc-proposta)" },
+  { id: "novo" as const,        label: "Novo lead",            color: "var(--pc-novo)" },
+  { id: "contato" as const,     label: "Em contato",           color: "var(--pc-contato)" },
+  { id: "proposta" as const,    label: "Proposta enviada",     color: "var(--pc-proposta)" },
   { id: "travado" as const,     label: "Travado (Advox)",      color: "var(--pc-travado)" },
-  { id: "aguardando" as const,  label: "Aguardando Liberação", color: "var(--pc-aguardando)" },
-  { id: "negociacao" as const,  label: "Negociação Final",     color: "var(--pc-negociacao)" },
+  { id: "aguardando" as const,  label: "Aguardando liberação", color: "var(--pc-aguardando)" },
+  { id: "negociacao" as const,  label: "Negociação final",     color: "var(--pc-negociacao)" },
   { id: "fechado" as const,     label: "Fechado",              color: "var(--pc-fechado)" },
   { id: "perdido" as const,     label: "Perdido",              color: "var(--pc-perdido)" },
 ];
 
 export const PIPELINE_JURIDICO_DB = [
-  { id: "recebido" as const,      label: "Lead Recebido",       color: "var(--pj-recebido)" },
-  { id: "analise" as const,       label: "Em Análise",          color: "var(--pj-analise)" },
-  { id: "contato" as const,       label: "Contato Inicial",     color: "var(--pj-contato)" },
-  { id: "honorarios" as const,    label: "Proposta Honorários", color: "var(--pj-honorarios)" },
-  { id: "contratou" as const,     label: "Cliente Contratou",   color: "var(--pj-contratou)" },
+  { id: "recebido" as const,      label: "Lead recebido",       color: "var(--pj-recebido)" },
+  { id: "analise" as const,       label: "Em análise",          color: "var(--pj-analise)" },
+  { id: "contato" as const,       label: "Contato inicial",     color: "var(--pj-contato)" },
+  { id: "honorarios" as const,    label: "Proposta de honorários", color: "var(--pj-honorarios)" },
+  { id: "contratou" as const,     label: "Cliente contratou",   color: "var(--pj-contratou)" },
   { id: "documentacao" as const,  label: "Documentação",        color: "var(--pj-documentacao)" },
   { id: "extrajudicial" as const, label: "Extrajudicial",       color: "var(--pj-extrajudicial)" },
   { id: "judicial" as const,      label: "Judicial",            color: "var(--pj-judicial)" },
   { id: "liberado" as const,      label: "Liberado",            color: "var(--pj-liberado)" },
-  { id: "naoliberado" as const,   label: "Não Liberado",        color: "var(--pj-naoliberado)" },
+  { id: "naoliberado" as const,   label: "Não liberado",        color: "var(--pj-naoliberado)" },
   { id: "recusou" as const,       label: "Recusou",             color: "var(--pj-recusou)" },
 ];
 

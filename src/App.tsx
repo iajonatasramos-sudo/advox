@@ -43,20 +43,20 @@ type NavItem = {
 const NAV: Record<Persona, NavItem[]> = {
   rep: [
     { id: "dashboard",  label: "Painel",          icon: <Ic.Dashboard size={14} /> },
-    { id: "agenda",     label: "Minha Agenda",    icon: <Ic.Calendar size={14} /> },
+    { id: "agenda",     label: "Minha agenda",    icon: <Ic.Calendar size={14} /> },
     { id: "clientes",   label: "Clientes",        icon: <Ic.Users size={14} /> },
     { id: "tarefas",    label: "Tarefas",         icon: <Ic.Check size={14} /> },
-    { id: "casos",      label: "Leads no Jurídico", icon: <Ic.Scale size={14} /> },
+    { id: "casos",      label: "Leads no jurídico", icon: <Ic.Scale size={14} /> },
     { id: "advoxchat",  label: "Painel AdvoxChat", icon: <Ic.Whats size={14} /> },
   ],
   coord: [
     { id: "dashboard", label: "Painel",            icon: <Ic.Dashboard size={14} /> },
-    { id: "agenda",    label: "Minha Agenda",      icon: <Ic.Calendar size={14} /> },
+    { id: "agenda",    label: "Minha agenda",      icon: <Ic.Calendar size={14} /> },
     { id: "clientes",  label: "Clientes",          icon: <Ic.Briefcase size={14} /> },
-    { id: "time",      label: "Meu Time",          icon: <Ic.Users size={14} /> },
-    { id: "leads",     label: "Leads da Equipe",   icon: <Ic.Briefcase size={14} /> },
-    { id: "casos",     label: "Leads no Jurídico", icon: <Ic.Scale size={14} /> },
-    { id: "tarefas",   label: "Tarefas da Equipe", icon: <Ic.Check size={14} /> },
+    { id: "time",      label: "Meu time",          icon: <Ic.Users size={14} /> },
+    { id: "leads",     label: "Leads da equipe",   icon: <Ic.Briefcase size={14} /> },
+    { id: "casos",     label: "Leads no jurídico", icon: <Ic.Scale size={14} /> },
+    { id: "tarefas",   label: "Tarefas da equipe", icon: <Ic.Check size={14} /> },
     { id: "advoxchat", label: "Painel AdvoxChat",  icon: <Ic.Whats size={14} /> },
   ],
   adv: [
@@ -64,12 +64,12 @@ const NAV: Record<Persona, NavItem[]> = {
     { id: "prazos",    label: "Prazos",  icon: <Ic.Calendar size={14} /> },
   ],
   admin: [
-    { id: "dashboard",      label: "Visão Geral",     icon: <Ic.Dashboard size={14} /> },
+    { id: "dashboard",      label: "Visão geral",     icon: <Ic.Dashboard size={14} /> },
     { id: "revendas",       label: "Revendas",        icon: <Ic.Building size={14} /> },
     { id: "representantes", label: "Pessoas",  icon: <Ic.Users size={14} /> },
     { id: "advogados",      label: "Advogados",       icon: <Ic.Gavel size={14} /> },
-    { id: "leads",          label: "Todos os Leads",  icon: <Ic.Briefcase size={14} /> },
-    { id: "casos",          label: "Todos os Casos",  icon: <Ic.Scale size={14} /> },
+    { id: "leads",          label: "Todos os leads",  icon: <Ic.Briefcase size={14} /> },
+    { id: "casos",          label: "Todos os casos",  icon: <Ic.Scale size={14} /> },
     { id: "advoxchat",      label: "Painel AdvoxChat", icon: <Ic.Whats size={14} /> },
     { id: "auditoria",      label: "Auditoria",       icon: <Ic.Audit size={14} /> },
     { id: "config",         label: "Configurações",   icon: <Ic.Settings size={14} /> },
@@ -160,7 +160,7 @@ function AppInner({ profile }: { profile: Profile }) {
       if (route === "perfil")     return <PerfilScreen user={user} />;
     }
     if (persona === "coord") {
-      if (route === "dashboard") return <CoordDashboard onOpenLead={setOpenLead} />;
+      if (route === "dashboard") return <CoordDashboard onOpenLead={setOpenLead} onIr={setRoute} />;
       if (route === "agenda")    return <MinhaAgenda onOpenLead={setOpenLead} />;
       if (route === "clientes")  return <Clientes onOpenLead={setOpenLead} />;
       if (route === "advoxchat") return <PainelAdvoxChat onOpenLead={setOpenLead} abaInicial={inicio?.aba} />;
@@ -281,7 +281,7 @@ function Topbar({ user, persona, titulo, revendaInfo, onOpenNotif, onOpenPerfil,
         </button>
       )}
       {isMobile ? <Wordmark compact /> : (
-        <h1 style={{ margin: 0, fontSize: 19, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ink)", whiteSpace: "nowrap" }}>{titulo}</h1>
+        <div style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "var(--ink-2)", whiteSpace: "nowrap" }}>{titulo}</div>
       )}
       <div style={{ flex: 1 }} />
 
@@ -343,13 +343,13 @@ function Topbar({ user, persona, titulo, revendaInfo, onOpenNotif, onOpenPerfil,
   );
 }
 
-function Wordmark({ compact, subtitulo }: { compact?: boolean; subtitulo?: string }) {
-  if (compact) return <LogoAdvox style={{ height: 26, width: "auto", flexShrink: 0 }} />;
+function Wordmark({ compact, subtitulo, sobreEscuro }: { compact?: boolean; subtitulo?: string; sobreEscuro?: boolean }) {
+  if (compact) return <LogoAdvox sobreEscuro={sobreEscuro} style={{ height: 26, width: "auto", flexShrink: 0 }} />;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-      <LogoAdvox style={{ height: 42, width: "auto", maxWidth: 200, objectFit: "contain", objectPosition: "left center" }} />
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+      <LogoAdvox sobreEscuro={sobreEscuro} style={{ height: 40, width: "auto", maxWidth: 200, objectFit: "contain", objectPosition: "left center" }} />
       {subtitulo && subtitulo !== "CRM Telecom" && (
-        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 190 }}>
+        <span style={{ fontSize: 13, fontWeight: 500, color: sobreEscuro ? "var(--sidebar-ink-2)" : "var(--ink-3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 190 }}>
           {subtitulo}
         </span>
       )}
@@ -369,49 +369,46 @@ type SidebarProps = {
 
 function Sidebar({ persona, items, route, setRoute, drawerOpen, revendaInfo }: SidebarProps) {
   const { signOut } = useAuth();
-  const labels: Record<Persona, string> = { rep: "Vendas", coord: "Gestão da equipe", adv: "Jurídico", admin: "Administração" };
   return (
     <aside
       className={`sidebar-drawer${drawerOpen ? " is-open" : ""}`}
       style={{
-        background: "var(--surface)",
-        borderRight: "1px solid var(--line)",
+        background: "var(--sidebar)",
+        color: "var(--sidebar-ink)",
+        borderRight: "1px solid var(--sidebar-line)",
         display: "flex", flexDirection: "column",
         overflow: "auto", height: "100vh",
       }}>
-      <div style={{ padding: "14px 16px", minHeight: 62, display: "flex", alignItems: "center", borderBottom: "1px solid var(--line)" }}>
+      <div style={{ padding: "18px 18px 16px", minHeight: 62, display: "flex", alignItems: "center" }}>
         {revendaInfo?.logo_url ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-            <img src={revendaInfo.logo_url} alt={revendaInfo.nome} style={{ height: 30, maxWidth: 120, objectFit: "contain" }} />
-            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)" }}>Advox</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+            <img src={revendaInfo.logo_url} alt={revendaInfo.nome} style={{ height: 32, maxWidth: 160, objectFit: "contain", objectPosition: "left center", background: "#fff", borderRadius: 6, padding: "4px 6px" }} />
+            <span style={{ fontSize: 12, color: "var(--sidebar-ink-3)" }}>com Advox Telecom</span>
           </div>
-        ) : <Wordmark subtitulo={revendaInfo?.nome ?? "CRM Telecom"} />}
+        ) : <Wordmark sobreEscuro subtitulo={revendaInfo?.nome ?? "CRM Telecom"} />}
       </div>
 
-      <div style={{ padding: "18px 18px 6px", fontSize: 10.5, color: "var(--ink-4)", textTransform: "uppercase", letterSpacing: "0.09em", fontWeight: 600 }}>
-        {labels[persona]}
-      </div>
-      <nav style={{ padding: "0 10px 12px", display: "flex", flexDirection: "column", gap: 2 }}>
+      <nav aria-label={persona === "adv" ? "Jurídico" : "Menu"} style={{ padding: "6px 10px 12px", display: "flex", flexDirection: "column", gap: 1 }}>
         {items.map(it => {
           const active = route === it.id;
           return (
-            <button key={it.id} onClick={() => setRoute(it.id)} className={active ? undefined : "nav-item"} style={{
+            <button key={it.id} onClick={() => setRoute(it.id)} aria-current={active ? "page" : undefined} className={active ? undefined : "nav-lateral"} style={{
               position: "relative",
-              display: "flex", alignItems: "center", gap: 10,
-              padding: "9px 12px",
-              fontSize: 13.5, fontWeight: active ? 600 : 500,
-              background: active ? "var(--navy-soft)" : "transparent",
+              display: "flex", alignItems: "center", gap: 11,
+              padding: "10px 12px",
+              fontSize: 14.5, fontWeight: active ? 600 : 500,
+              background: active ? "var(--sidebar-ativo)" : "transparent",
               border: 0,
-              color: active ? "var(--navy)" : "var(--ink-2)",
+              color: active ? "var(--sidebar-ink)" : "var(--sidebar-ink-2)",
               borderRadius: 8, cursor: "pointer", textAlign: "left",
             }}>
-              {active && <span style={{ position: "absolute", left: -10, top: 8, bottom: 8, width: 3, borderRadius: "0 3px 3px 0", background: "var(--navy)" }} />}
-              <span style={{ color: active ? "var(--navy)" : "var(--ink-3)", display: "inline-flex" }}>{it.icon}</span>
+              {active && <span style={{ position: "absolute", left: -10, top: 9, bottom: 9, width: 3, borderRadius: "0 3px 3px 0", background: "var(--ceu)" }} />}
+              <span style={{ color: active ? "var(--ceu)" : "var(--sidebar-ink-3)", display: "inline-flex" }}>{it.icon}</span>
               <span style={{ flex: 1 }}>{it.label}</span>
               {it.badge && (
                 <span style={{
-                  fontSize: 10.5, fontWeight: 600,
-                  background: active ? "var(--navy)" : "var(--surface-3)", color: active ? "var(--navy-ink)" : "var(--ink-3)",
+                  fontSize: 11.5, fontWeight: 600,
+                  background: active ? "var(--ceu)" : "var(--sidebar-ativo)", color: active ? "#01153f" : "var(--sidebar-ink-2)",
                   padding: "1px 7px", borderRadius: 99,
                 }}>{it.badge}</span>
               )}
@@ -420,16 +417,13 @@ function Sidebar({ persona, items, route, setRoute, drawerOpen, revendaInfo }: S
         })}
       </nav>
 
-      <div style={{ marginTop: "auto", padding: "12px 16px", borderTop: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--ink-4)" }}>
-          <span style={{ width: 6, height: 6, borderRadius: 99, background: "var(--green)" }} /> Advox · online
-        </span>
-        <button onClick={signOut} className="nav-item" style={{
-          display: "inline-flex", alignItems: "center", gap: 6,
+      <div style={{ marginTop: "auto", padding: "12px 14px", borderTop: "1px solid var(--sidebar-line)" }}>
+        <button onClick={signOut} className="nav-lateral" style={{
+          display: "inline-flex", alignItems: "center", gap: 8,
           background: "transparent", border: 0, borderRadius: 6,
-          color: "var(--ink-3)", fontSize: 12, cursor: "pointer", padding: "5px 8px",
+          color: "var(--sidebar-ink-3)", fontSize: 13.5, cursor: "pointer", padding: "6px 8px",
         }}>
-          <Ic.Logout size={13} /> Sair
+          <Ic.Logout size={14} /> Sair
         </button>
       </div>
     </aside>

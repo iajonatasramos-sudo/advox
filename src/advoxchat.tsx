@@ -150,7 +150,7 @@ function Contatos({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) {
                     <td style={td}>
                       {lead ? (
                         <button onClick={(e) => { e.stopPropagation(); onOpenLead(lead); }} style={{ border: 0, background: "var(--navy-soft)", color: "var(--navy)", borderRadius: 6, padding: "2px 8px", fontSize: 11.5, fontWeight: 600, cursor: "pointer" }}>
-                          {lead.empresa} →
+                          {lead.empresa}
                         </button>
                       ) : <span style={{ color: "var(--ink-4)" }}>—</span>}
                     </td>
@@ -216,7 +216,7 @@ function ContatoModal({ contato, podeEditar, onClose }: { contato: WaContato | n
               : <Input full value={telefone} onChange={e => setTelefone(e.target.value)} placeholder="(11) 99999-0000" />}
           </Field>
           <Field label="Interesses">
-            <textarea value={interesses} onChange={e => setInteresses(e.target.value)} rows={3} disabled={!podeEditar} placeholder="Ex.: 12 linhas Vivo, quer portabilidade — proposta enviada em 12/08"
+            <textarea value={interesses} onChange={e => setInteresses(e.target.value)} rows={3} disabled={!podeEditar} placeholder="Ex.: 12 linhas Vivo, quer portabilidade, proposta enviada em 12/08"
               style={{ width: "100%", resize: "vertical", border: "1px solid var(--line)", borderRadius: 8, padding: 10, fontFamily: "inherit", fontSize: 13, background: "var(--surface)", color: "var(--ink)" }} />
           </Field>
           {contato?.telefone && (
@@ -289,7 +289,7 @@ function Mensagens() {
           ))}
         </div>
         {msgs === null ? <div style={{ padding: 30, textAlign: "center", color: "var(--ink-3)" }}>Carregando…</div>
-          : grupos.length === 0 ? <Empty icon={<Ic.Whats size={20} />} title="Nenhuma resposta rápida" hint="Crie aqui ou na extensão — aparecem nos dois lugares." action={<Btn size="sm" variant="primary" onClick={() => setDlgMsg("nova")}>Criar a primeira</Btn>} />
+          : grupos.length === 0 ? <Empty icon={<Ic.Whats size={20} />} title="Nenhuma resposta rápida" hint="O que você criar aqui também aparece na extensão do WhatsApp." action={<Btn size="sm" variant="primary" onClick={() => setDlgMsg("nova")}>Criar a primeira</Btn>} />
           : grupos.map(g => {
             const aberta = abertas.has(g.id) || !!busca.trim() || filtro !== "tudo";
             const podeEditarCat = g.cat && g.cat.dono_id === profile?.id;
@@ -383,7 +383,7 @@ function MensagemModal({ msg, cats, onClose }: { msg: MsgRapida | null; cats: Ms
           </div>
           {coord && (
             <label style={{ display: "flex", gap: 8, fontSize: 12.5, color: "var(--ink-2)", cursor: "pointer", background: "var(--surface-2)", border: "1px solid var(--line)", borderRadius: 8, padding: 10 }}>
-              <input type="checkbox" checked={equipe} onChange={e => setEquipe(e.target.checked)} /> Compartilhar com a revenda — todos os representantes veem e usam.
+              <input type="checkbox" checked={equipe} onChange={e => setEquipe(e.target.checked)} /> Compartilhar com a revenda (todos os consultores veem e usam)
             </label>
           )}
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -569,7 +569,7 @@ function Usuarios() {
     <div style={{ padding: 18 }}>
       <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ fontSize: 12.5, color: "var(--ink-3)" }}>
-          Quem faz parte da revenda usa a extensão com o próprio login do Advox. Para adicionar alguém, convide pela tela <b>Meu Time</b>.
+          Quem faz parte da revenda usa a extensão com o próprio login do Advox. Para adicionar alguém, convide pela tela <b>Meu time</b>.
         </div>
         <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 12, overflow: "hidden" }}>
           {membros === null ? <div style={{ padding: 30, textAlign: "center", color: "var(--ink-3)" }}>Carregando…</div>
@@ -625,7 +625,7 @@ function Instalar() {
     "Abra o Chrome em chrome://extensions.",
     "Ligue o \"Modo do desenvolvedor\" (canto superior direito).",
     "Clique em \"Carregar sem compactação\" e selecione a pasta descompactada.",
-    "Abra o WhatsApp Web (web.whatsapp.com) — a barra do AdvoxChat aparece no topo.",
+    "Abra o WhatsApp Web (web.whatsapp.com). A barra do AdvoxChat aparece no topo.",
     "Entre com a sua conta do Advox (o mesmo login do sistema).",
   ];
 
@@ -648,7 +648,7 @@ function Instalar() {
           </div>
         </div>
         <div style={card}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", color: "var(--ink-3)", marginBottom: 10 }}>COMO INSTALAR</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", marginBottom: 10 }}>Como instalar</div>
           <ol style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
             {PASSOS.map((p, i) => (
               <li key={i} style={{ display: "flex", gap: 10, fontSize: 13, color: "var(--ink-2)" }}>
@@ -657,7 +657,7 @@ function Instalar() {
             ))}
           </ol>
           <div style={{ marginTop: 14, fontSize: 12, color: "var(--ink-3)", background: "var(--surface-2)", border: "1px solid var(--line)", borderRadius: 8, padding: 10 }}>
-            Login único: use a <b>mesma conta do Advox</b> — não há outro cadastro para a extensão. Pela extensão, o botão <b>Painel AdvoxChat</b> abre esta tela já logado.
+            Login único: use a <b>mesma conta do Advox</b>. A extensão não tem cadastro separado. Pela extensão, o botão <b>Painel AdvoxChat</b> abre esta tela já logado.
             Enquanto a extensão não estiver na Chrome Web Store, a atualização é manual (baixar de novo e clicar em ↻ em chrome://extensions).
           </div>
           {cfg?.notas && <div style={{ marginTop: 10, fontSize: 12.5, color: "var(--ink-2)", whiteSpace: "pre-wrap" }}><b>Novidades:</b> {cfg.notas}</div>}
@@ -687,6 +687,6 @@ function Instalar() {
 }
 
 const card: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 12, padding: 18, boxShadow: "var(--shadow-sm)" };
-const th: React.CSSProperties = { padding: "9px 12px", fontSize: 10.5, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", whiteSpace: "nowrap" };
+const th: React.CSSProperties = { padding: "9px 12px", fontSize: 13.5, fontWeight: 600, color: "var(--ink-3)", whiteSpace: "nowrap" };
 const td: React.CSSProperties = { padding: "9px 12px" };
 const selectCls: React.CSSProperties = { border: "1px solid var(--line)", borderRadius: 8, padding: "6px 8px", fontSize: 12, background: "var(--surface)", color: "var(--ink-2)", fontFamily: "inherit" };

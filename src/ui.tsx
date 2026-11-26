@@ -125,21 +125,16 @@ type AvatarProps = {
 };
 export function Avatar({ name = "?", size = 28, src, color }: AvatarProps) {
   const ini = initials(name);
-  const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  const hue = (hash * 17) % 360;
-  const bg = color || `oklch(0.92 0.04 ${hue})`;
-  const fg = `oklch(0.32 0.06 ${hue})`;
   return (
     <span style={{
       width: size, height: size,
       display: "inline-flex", alignItems: "center", justifyContent: "center",
-      background: src ? `url(${src}) center/cover` : bg,
-      color: fg,
+      background: src ? `url(${src}) center/cover` : (color || "var(--navy-soft-2)"),
+      color: "var(--navy)",
       fontSize: size * 0.4,
       fontWeight: 600,
-      borderRadius: size > 32 ? 8 : 6,
+      borderRadius: 99,
       flexShrink: 0,
-      letterSpacing: "-0.02em",
     }}>
       {!src && ini}
     </span>
@@ -154,30 +149,57 @@ type KPIProps = {
   trend?: "up" | "down" | "neutral";
   icon?: React.ReactNode;
 };
-export function KPI({ label, valor, delta, trend, icon }: KPIProps) {
+export function KPI({ label, valor, delta, trend }: KPIProps) {
   const trendColor = trend === "up" ? "var(--green)" : trend === "down" ? "var(--rose)" : "var(--ink-3)";
   return (
     <div style={{
       background: "var(--surface)",
       border: "1px solid var(--line)",
-      borderRadius: 12,
-      boxShadow: "var(--shadow-sm)",
-      padding: "16px 18px",
-      display: "flex", flexDirection: "column", gap: 8,
-      minHeight: 92,
+      borderRadius: 10,
+      padding: "14px 16px",
+      display: "flex", flexDirection: "column", gap: 2,
     }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 11, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 600 }}>{label}</span>
-        {icon && <span style={{ width: 28, height: 28, borderRadius: 8, background: "var(--navy-soft)", color: "var(--navy)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{icon}</span>}
+      <span style={{ fontSize: 14, color: "var(--ink-3)", fontWeight: 500 }}>{label}</span>
+      <div className="titulo mono" style={{ fontSize: 32, fontWeight: 600, lineHeight: 1.15, color: "var(--ink)" }}>{valor}</div>
+      {delta && <div style={{ fontSize: 13, color: trendColor }}>{delta}</div>}
+    </div>
+  );
+}
+
+/* === Funil (assinatura do Painel) ===
+ * Uma faixa só com as etapas do funil comercial, na ordem real do processo:
+ * cada trecho tem a largura da quantidade de leads naquela etapa. Etapa vazia
+ * vira um risco fino, para o funil inteiro continuar legível. */
+export function Funil({ leads, onEtapa }: { leads: { status: string; valor?: number | string | null }[]; onEtapa?: (id: string) => void }) {
+  const etapas = PIPELINE_COMERCIAL.filter(e => e.id !== "perdido").map(e => {
+    const doEstagio = leads.filter(l => l.status === e.id);
+    return { ...e, qtd: doEstagio.length, valor: doEstagio.reduce((s, l) => s + Number(l.valor || 0), 0) };
+  });
+  const total = etapas.reduce((s, e) => s + e.qtd, 0);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", gap: 3, height: 14 }} role="img" aria-label={etapas.map(e => `${e.label}: ${e.qtd}`).join(", ")}>
+        {etapas.map(e => (
+          <span key={e.id} title={`${e.label}: ${e.qtd}`} style={{
+            flex: total ? (e.qtd || 0.08) : 1, minWidth: 6, borderRadius: 3,
+            background: e.qtd ? e.color : "var(--surface-3)",
+          }} />
+        ))}
       </div>
-      <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.025em", color: "var(--ink)" }}>{valor}</div>
-      {delta && (
-        <div style={{ fontSize: 11.5, color: trendColor, display: "inline-flex", alignItems: "center", gap: 4 }}>
-          {trend === "up" && <Ic.ArrowUp size={11} />}
-          {trend === "down" && <Ic.ArrowDown size={11} />}
-          {delta}
-        </div>
-      )}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))", gap: "10px 16px" }}>
+        {etapas.map(e => (
+          <button key={e.id} type="button" onClick={() => onEtapa?.(e.id)} disabled={!onEtapa} style={{
+            display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 1, padding: 0,
+            background: "none", border: 0, textAlign: "left", font: "inherit", color: "inherit",
+            cursor: onEtapa ? "pointer" : "default",
+          }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ink-3)" }}>
+              <span style={{ width: 8, height: 8, borderRadius: 2, background: e.color }} />{e.label}
+            </span>
+            <span className="titulo mono" style={{ fontSize: 22, fontWeight: 600, color: e.qtd ? "var(--ink)" : "var(--ink-4)" }}>{e.qtd}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -234,10 +256,8 @@ export function OperadoraTag({ op, size = "sm" }: { op: string; size?: "sm" | "m
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 5,
-      fontSize: size === "sm" ? 10.5 : 11.5,
-      fontWeight: 700,
-      letterSpacing: "0.05em",
-      textTransform: "uppercase",
+      fontSize: size === "sm" ? 12 : 13,
+      fontWeight: 600,
       padding: size === "sm" ? "3px 7px" : "4px 9px",
       color: OPERADORA_COLORS[op] || "var(--ink-2)",
       background: `color-mix(in oklch, ${OPERADORA_COLORS[op] || "var(--ink-3)"} 10%, var(--surface))`,
@@ -260,7 +280,7 @@ export function Section({ title, subtitle, right, children, dense, noPad }: Sect
   return (
     <section style={{
       background: "var(--surface)", border: "1px solid var(--line)",
-      borderRadius: 12, overflow: "hidden", boxShadow: "var(--shadow-sm)",
+      borderRadius: 10, overflow: "hidden",
     }}>
       {title && (
         <header style={{
@@ -270,8 +290,8 @@ export function Section({ title, subtitle, right, children, dense, noPad }: Sect
           background: "var(--surface)",
         }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.005em" }}>{title}</h3>
-            {subtitle && <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginTop: 2 }}>{subtitle}</div>}
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "var(--ink)" }}>{title}</h3>
+            {subtitle && <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 2 }}>{subtitle}</div>}
           </div>
           {right}
         </header>
@@ -313,12 +333,11 @@ export function DesbloquearTopbar({ onOpen }: { onOpen: () => void }) {
         padding: "7px 14px",
         borderRadius: 5,
         fontWeight: 600, fontSize: 12.5,
-        letterSpacing: "0.04em", textTransform: "uppercase",
         cursor: "pointer",
         whiteSpace: "nowrap",
         boxShadow: "0 1px 0 var(--gold-2), 0 6px 14px -6px var(--gold-2)",
       }}>
-        <Ic.Unlock size={14} /> Desbloquear Cliente
+        <Ic.Unlock size={14} /> Desbloquear cliente
       </button>
     </div>
   );
@@ -466,7 +485,7 @@ export function KV({ k, v, mono }: { k: React.ReactNode; v: React.ReactNode; mon
 export function SidebarBlock({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
   return (
     <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--line)" }}>
-      <div style={{ fontSize: 11, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 500, marginBottom: 8 }}>{title}</div>
+      <div style={{ fontSize: 13, color: "var(--ink-3)", fontWeight: 500, marginBottom: 8 }}>{title}</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>{children}</div>
     </div>
   );
@@ -509,7 +528,9 @@ export function Select({ value, onChange, options }: { value: string; onChange?:
 
 /** Logo completo do Advox: versão padrão no White; no Grey/Dark, a versão
  *  com "ADVOX" em cinza-claro (troca via CSS, ver .logo-claro/.logo-escuro). */
-export function LogoAdvox({ style }: { style?: React.CSSProperties }) {
+export function LogoAdvox({ style, sobreEscuro }: { style?: React.CSSProperties; sobreEscuro?: boolean }) {
+  // Sobre fundo escuro (menu lateral azul-marinho) usa sempre a versão clara do "ADVOX".
+  if (sobreEscuro) return <img src="/brand/advox-logo-escuro.png" alt="Advox Telecom" style={style} />;
   return (
     <>
       <img className="logo-claro" src="/brand/advox-logo.png" alt="Advox Telecom" style={style} />

@@ -31,35 +31,37 @@ export function RepDashboard({ onOpenLead, onOpenDesbloq }: { onOpenLead: (l: Ui
   const [showNovo, setShowNovo] = useState(false);
   const { leads, error } = useLiveLeads({ repId: profile?.id });
 
-  const kpiAtivos = (leads ?? []).filter(l => !["fechado","perdido"].includes(l.status)).length;
-  const kpiFechados = (leads ?? []).filter(l => l.status === "fechado");
-  const kpiValor = kpiFechados.reduce((s, l) => s + Number(l.valor || 0), 0);
-  const kpiTravados = (leads ?? []).filter(l => l.status === "travado" || l.status === "aguardando").length;
+  const lista = leads ?? [];
+  const abertos = lista.filter(l => !["fechado", "perdido"].includes(l.status));
+  const emAberto = abertos.reduce((s, l) => s + Number(l.valor || 0), 0);
+  const noJuridico = lista.filter(l => l.status === "travado" || l.status === "aguardando").length;
+  const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0, 0, 0, 0);
+  const fechadosMes = lista.filter(l => l.status === "fechado" && new Date(l.updated_at ?? l.created_at) >= inicioMes);
+  const valorMes = fechadosMes.reduce((s, l) => s + Number(l.valor || 0), 0);
+  const hojeTxt = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+  const mes = new Date().toLocaleDateString("pt-BR", { month: "long" });
+  const numero = (rotulo: string, valor: string, nota: string, cor?: string) => (
+    <div>
+      <div style={{ fontSize: 14, color: "var(--ink-3)" }}>{rotulo}</div>
+      <div className="titulo mono" style={{ fontSize: 28, fontWeight: 600, lineHeight: 1.15, color: cor ?? "var(--ink)" }}>{valor}</div>
+      <div style={{ fontSize: 13, color: "var(--ink-3)" }}>{nota}</div>
+    </div>
+  );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: 18 }}>
-      <div>
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
-          <div>
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>
-              Bom dia{profile?.nome ? `, ${profile.nome.split(" ")[0]}` : ""}.
-            </h1>
-            <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
-              {leads === null ? "Carregando…" :
-                <>{kpiAtivos} leads ativos · {kpiTravados} em processo Advox · {kpiFechados.length} fechados no mês</>
-              }
-            </div>
-          </div>
-          <div style={{ fontSize: 11.5, color: "var(--ink-3)" }} className="mono">
-            {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
-          </div>
+    <div className="page-pad" style={{ display: "flex", flexDirection: "column", gap: 16, padding: "22px 24px" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: "14px 40px" }}>
+        <div>
+          <h1 className="page-title" style={{ margin: 0, fontSize: 28, fontWeight: 600 }}>Seus leads</h1>
+          <div style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 2 }}>{hojeTxt.charAt(0).toUpperCase() + hojeTxt.slice(1)}</div>
         </div>
-        <div className="grid-kpi" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-          <KPI label="Leads ativos" valor={String(kpiAtivos)} delta={leads ? `${leads.length} no total` : "—"} trend="neutral" icon={<Ic.Briefcase size={14} />} />
-          <KPI label="Em processo Advox" valor={String(kpiTravados)} delta="travados + aguardando" trend="neutral" icon={<Ic.Scale size={14} />} />
-          <KPI label="Fechados no mês" valor={String(kpiFechados.length)} delta={fmtBRL(kpiValor)} trend={kpiFechados.length > 0 ? "up" : "neutral"} icon={<Ic.Money size={14} />} />
-          <KPI label="Pipeline aberto" valor={fmtBRL((leads ?? []).filter(l => !["fechado","perdido"].includes(l.status)).reduce((s, l) => s + Number(l.valor || 0), 0))} delta="valor estimado" trend="neutral" icon={<Ic.Pipeline size={14} />} />
-        </div>
+        {leads !== null && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px 36px" }}>
+            {numero("Em negociação", fmtBRL(emAberto), `${abertos.length} ${abertos.length === 1 ? "lead aberto" : "leads abertos"}`)}
+            {numero("No jurídico", String(noJuridico), noJuridico === 1 ? "cliente sendo desbloqueado" : "clientes sendo desbloqueados")}
+            {numero(`Fechado em ${mes}`, fmtBRL(valorMes), `${fechadosMes.length} ${fechadosMes.length === 1 ? "contrato" : "contratos"}`, valorMes ? "var(--green)" : undefined)}
+          </div>
+        )}
       </div>
 
       {error && (
@@ -72,10 +74,10 @@ export function RepDashboard({ onOpenLead, onOpenDesbloq }: { onOpenLead: (l: Ui
         display: "flex", alignItems: "center", gap: 10,
         padding: "10px 12px",
         background: "var(--surface)", border: "1px solid var(--line)",
-        borderRadius: 12, boxShadow: "var(--shadow-sm)",
+        borderRadius: 10,
       }}>
         <div className="seg-rola" style={{ display: "inline-flex", background: "var(--surface-3)", border: "1px solid var(--line)", borderRadius: 5, padding: 2 }}>
-          {([["kanban", <Ic.Kanban size={13} />, "Kanban"], ["lista", <Ic.List size={13} />, "Lista"]] as const).map(([id, ic, l]) => (
+          {([["kanban", <Ic.Kanban size={13} />, "Funil"], ["lista", <Ic.List size={13} />, "Lista"]] as const).map(([id, ic, l]) => (
             <button key={id} onClick={() => setView(id as "kanban" | "lista")} style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               padding: "5px 10px", fontSize: 12, fontWeight: 500,
@@ -87,10 +89,9 @@ export function RepDashboard({ onOpenLead, onOpenDesbloq }: { onOpenLead: (l: Ui
             }}>{ic}{l}</button>
           ))}
         </div>
-        <Input icon={<Ic.Search size={13} />} placeholder="Buscar por empresa, contato, CNPJ…" value={filter} onChange={e=>setFilter(e.target.value)} style={{ minWidth: 320 }} />
+        <Input icon={<Ic.Search size={13} />} placeholder="Buscar empresa ou contato" value={filter} onChange={e=>setFilter(e.target.value)} style={{ minWidth: 320 }} />
         <div className="toolbar-actions" style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-          <Btn variant="ghost" size="sm" icon={<Ic.Download size={13} />}>Exportar</Btn>
-          <Btn variant="primary" size="sm" icon={<Ic.Plus size={13} />} onClick={() => setShowNovo(true)}>Novo Lead</Btn>
+          <Btn variant="primary" size="sm" icon={<Ic.Plus size={13} />} onClick={() => setShowNovo(true)}>Novo lead</Btn>
         </div>
       </div>
 
@@ -170,7 +171,7 @@ export function RepKanban({ filter, onOpenLead, leads: leadsProp, onOpenDesbloq 
             }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 12px 6px" }}>
               <span style={{ width: 7, height: 7, borderRadius: 99, background: col.color }} />
-              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-2)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{col.label}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-2)" }}>{col.label}</span>
               <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: "var(--ink-3)", background: "var(--surface)", border: "1px solid var(--line)", padding: "1px 8px", borderRadius: 99 }}>{items.length}</span>
             </div>
             <div style={{ padding: "0 12px 6px", fontSize: 11.5, color: "var(--ink-3)", minHeight: 18 }}>
@@ -260,7 +261,7 @@ function LeadCard({ lead, onClick, onDragStart, onDragEnd, isDragging }: {
           borderRadius: 6, fontSize: 11, color: "var(--gold-deep)",
           marginTop: 2,
         }}>
-          <Ic.Scale size={11} /><span className="mono">{lead.advox_caso_id.slice(0, 8)}</span> · em análise
+          <Ic.Scale size={11} />No jurídico
         </div>
       )}
     </div>
@@ -268,7 +269,7 @@ function LeadCard({ lead, onClick, onDragStart, onDragEnd, isDragging }: {
 }
 
 /* === Lista === */
-export function RepLista({ filter, onOpenLead, leads: leadsProp }: { filter: string; onOpenLead: (l: UiLead) => void; leads?: UiLead[] | null }) {
+export function RepLista({ filter, onOpenLead, leads: leadsProp, semMoldura }: { filter: string; onOpenLead: (l: UiLead) => void; leads?: UiLead[] | null; semMoldura?: boolean }) {
   const source = leadsProp ?? [];
   const leads = source.filter(l => !filter || (l.empresa + l.contato).toLowerCase().includes(filter.toLowerCase()));
   if (leadsProp === null) {
@@ -277,17 +278,17 @@ export function RepLista({ filter, onOpenLead, leads: leadsProp }: { filter: str
   if (leads.length === 0) {
     return (
       <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6 }}>
-        <Empty icon={<Ic.Briefcase size={20} />} title="Nenhum lead aqui ainda" hint={filter ? "Tente outra busca." : "Clique em 'Novo Lead' para começar."} />
+        <Empty icon={<Ic.Briefcase size={20} />} title="Nenhum lead aqui ainda" hint={filter ? "Tente outra busca." : "Cadastre o primeiro em Novo lead."} />
       </div>
     );
   }
   return (
-    <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6, overflow: "hidden" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
+    <div style={semMoldura ? undefined : { background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
         <thead>
-          <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--line)" }}>
-            {["ID", "Empresa / Contato", "Operadora", "Status", "Valor", "Próximo passo", "Origem", ""].map(h => (
-              <th key={h} style={{ textAlign: "left", padding: "9px 12px", fontWeight: 500, color: "var(--ink-3)", fontSize: 11.5, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+          <tr style={{ borderBottom: "1px solid var(--line)" }}>
+            {["Cliente", "Operadora", "Etapa", "Valor", "Próximo passo", "Origem", ""].map(h => (
+              <th key={h} style={{ textAlign: "left", padding: "10px 14px", fontWeight: 500, color: "var(--ink-3)", fontSize: 13 }}>{h}</th>
             ))}
           </tr>
         </thead>
@@ -296,21 +297,20 @@ export function RepLista({ filter, onOpenLead, leads: leadsProp }: { filter: str
             <tr key={l.id} onClick={() => onOpenLead(l)} style={{ borderBottom: "1px solid var(--line)", cursor: "pointer" }}
               onMouseEnter={e=>e.currentTarget.style.background="var(--hover)"}
               onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-              <td style={{ padding: "10px 12px" }}><span className="mono" style={{ color: "var(--ink-3)", fontSize: 11.5 }}>{l.id.slice(0, 8)}</span></td>
               <td style={{ padding: "10px 12px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                   <Avatar name={l.contato} size={26} />
                   <div>
-                    <div style={{ fontWeight: 500, color: "var(--ink)" }}>{l.empresa}</div>
-                    <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>{l.contato}{l.cidade ? ` · ${l.cidade}` : ""}{l.uf ? `/${l.uf}` : ""}</div>
+                    <div style={{ fontWeight: 600, color: "var(--ink)" }}>{l.empresa}</div>
+                    <div style={{ fontSize: 13, color: "var(--ink-3)" }}>{l.contato}{l.cidade ? `, ${l.cidade}` : ""}{l.uf ? `/${l.uf}` : ""}</div>
                   </div>
                 </div>
               </td>
               <td style={{ padding: "10px 12px" }}><OperadoraTag op={l.operadora} /></td>
               <td style={{ padding: "10px 12px" }}><StatusPillDB stage={l.status} size="sm" /></td>
               <td style={{ padding: "10px 12px" }} className="mono"><span style={{ fontWeight: 500 }}>{fmtBRL(Number(l.valor || 0))}</span></td>
-              <td style={{ padding: "10px 12px", color: "var(--ink-2)" }}>{l.proximo ?? "—"}</td>
-              <td style={{ padding: "10px 12px", color: "var(--ink-3)" }}>{l.origem ?? "—"}</td>
+              <td style={{ padding: "10px 12px", color: l.proximo ? "var(--ink-2)" : "var(--ink-4)" }}>{l.proximo ?? "Definir"}</td>
+              <td style={{ padding: "10px 12px", color: "var(--ink-3)" }}>{l.origem ?? ""}</td>
               <td style={{ padding: "10px 12px", textAlign: "right" }}>
                 <Ic.Chevron size={13} color="var(--ink-4)" />
               </td>
@@ -401,7 +401,7 @@ export function NovoLeadModal({ onClose, lead, inicial }: {
             {editando ? <Ic.Edit size={14} /> : <Ic.Plus size={15} />}
           </span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>{editando ? "Editar lead" : "Novo Lead"}</div>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>{editando ? "Editar lead" : "Novo lead"}</div>
             <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>{editando ? lead?.empresa : "Cadastre um novo cliente em prospecção"}</div>
           </div>
           <button onClick={onClose} style={{ background: "transparent", border: 0, color: "var(--ink-3)", cursor: "pointer", padding: 6 }}>
@@ -532,7 +532,7 @@ export function FidelidadeBadge({ fim }: { fim: string | null | undefined }) {
       border: `1px solid ${vencida ? "var(--line)" : "var(--amber-border)"}`,
     }}>
       <Ic.Calendar size={11} />
-      {vencida ? "Fidelidade vencida — sem multa" : dias === 0 ? "Fidelidade vence hoje" : `Fidelidade vence em ${dias}d`}
+      {vencida ? "Fidelidade vencida, sem multa" : dias === 0 ? "Fidelidade vence hoje" : `Fidelidade vence em ${dias}d`}
     </span>
   );
 }
@@ -668,7 +668,7 @@ export function LeadQuickView({ lead: leadProp, onClose, onOpenFull, onOpenDesbl
 
           {/* Linha do tempo do funil (clique para mover) */}
           <div>
-            <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-4)", marginBottom: 6 }}>Etapa do funil</div>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink-4)", marginBottom: 6 }}>Etapa do funil</div>
             <div style={{ display: "flex", gap: 3 }}>
               {PIPELINE_COMERCIAL.map((s, i) => {
                 const atual = s.id === lead.status;
@@ -728,7 +728,7 @@ export function LeadQuickView({ lead: leadProp, onClose, onOpenFull, onOpenDesbl
               <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Jurídico</div>
               {lead.advox_caso_id ? (
                 <div style={{ fontSize: 12.5, display: "flex", alignItems: "center", gap: 6 }}>
-                  <Ic.Scale size={13} /> Caso <span className="mono">{lead.advox_caso_id.slice(0, 8)}</span>
+                  <Ic.Scale size={13} /> No jurídico
                   {lead.advox_caso && <StatusPill stage={lead.advox_caso.status} pipeline={PIPELINE_JURIDICO_DB} size="sm" />}
                 </div>
               ) : onOpenDesbloq ? (
@@ -829,12 +829,10 @@ export function RepLeadDetail({ lead: leadProp, onBack, onOpenDesbloq }: { lead:
       )}
       <div style={{ padding: "12px 18px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 10, background: "var(--surface-2)" }}>
         <button onClick={onBack} style={{ background: "transparent", border: 0, color: "var(--ink-2)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, padding: 4, fontSize: 12.5 }}>
-          <Ic.ArrowLeft size={13} /> Pipeline
+          <Ic.ArrowLeft size={13} /> Leads
         </button>
         <span style={{ color: "var(--ink-4)" }}>/</span>
-        <span className="mono" style={{ fontSize: 12, color: "var(--ink-3)" }}>{lead.id.slice(0, 8)}</span>
-        <span style={{ color: "var(--ink-4)" }}>·</span>
-        <span style={{ fontSize: 13, color: "var(--ink)" }}>{lead.empresa}</span>
+        <span style={{ fontSize: 14, color: "var(--ink)" }}>{lead.empresa}</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
           <Btn variant="ghost" size="sm" icon={<Ic.Phone size={13} />} disabled={!lead.telefone}
             title={lead.telefone ? `Ligar para ${fmtTelefone(lead.telefone)}` : "Cadastre o telefone do contato"}
@@ -857,7 +855,7 @@ export function RepLeadDetail({ lead: leadProp, onBack, onOpenDesbloq }: { lead:
               <Ic.Building size={26} />
             </div>
             <div style={{ flex: 1 }}>
-              <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>{lead.empresa}</h1>
+              <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>{lead.empresa}</h1>
               <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 10, fontSize: 12.5, color: "var(--ink-3)", flexWrap: "wrap" }}>
                 {lead.cnpj && <><span><span className="mono">{lead.cnpj}</span></span><span>·</span></>}
                 {(lead.cidade || lead.uf) && <><span>{lead.cidade ?? ""}{lead.uf ? `/${lead.uf}` : ""}</span><span>·</span></>}
@@ -885,9 +883,9 @@ export function RepLeadDetail({ lead: leadProp, onBack, onOpenDesbloq }: { lead:
                 <Ic.Scale size={20} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11.5, color: "var(--gold-deep)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 500 }}>Caso jurídico vinculado</div>
+                <div style={{ fontSize: 13.5, color: "var(--gold-deep)", fontWeight: 500 }}>Caso jurídico vinculado</div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginTop: 2 }}>
-                  <span className="mono">{caso.id.slice(0, 8)}</span> — {caso.advogado?.nome ?? "Aguardando atribuição"}
+                  {caso.advogado?.nome ? `Advogado: ${caso.advogado.nome}` : "Esperando um advogado ser designado"}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--ink-2)", marginTop: 4 }}>
                   Próximo passo: <strong>{caso.prox_passo ?? "—"}</strong>
@@ -1157,7 +1155,7 @@ export function RepTarefas() {
     <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
       <header style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Tarefas</h1>
+          <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>Tarefas</h1>
           <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
             {tarefas === null ? "Carregando…" : `${(tarefas ?? []).filter(t => !t.completed).length} pendentes`}
           </div>
@@ -1176,7 +1174,7 @@ export function RepTarefas() {
         <div style={{ padding: 40, textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>Carregando tarefas…</div>
       ) : (tarefas ?? []).length === 0 ? (
         <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6 }}>
-          <Empty icon={<Ic.Check size={20} />} title="Nenhuma tarefa ainda" hint="Crie sua primeira tarefa para começar." action={<Btn variant="primary" size="sm" icon={<Ic.Plus size={12} />} onClick={() => setShowNova(true)}>Nova tarefa</Btn>} />
+          <Empty icon={<Ic.Check size={20} />} title="Nenhuma tarefa ainda" hint="Crie uma tarefa para não esquecer o próximo contato." action={<Btn variant="primary" size="sm" icon={<Ic.Plus size={12} />} onClick={() => setShowNova(true)}>Nova tarefa</Btn>} />
         </div>
       ) : (
         groups.map(g => {
@@ -1283,7 +1281,7 @@ export function NovaTarefaModal({ onClose, leadId: leadFixo }: { onClose: () => 
             </Field>
           </div>
           {!quando && (
-            <Field label="Sem data — urgência">
+            <Field label="Urgência (quando não há data)">
               <Select value={urgencia} onChange={e=>setUrgencia(e.target.value as "atrasada"|"hoje"|"semana"|"proxima")} options={["hoje","semana","proxima"]} />
             </Field>
           )}
@@ -1306,7 +1304,7 @@ export function RepCasos({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) {
   return (
     <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
       <header>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Leads no Jurídico</h1>
+        <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>Leads no jurídico</h1>
         <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
           Clientes seus que foram indicados para o escritório.
         </div>
@@ -1323,13 +1321,13 @@ export function RepCasos({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) {
         {casos === null ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>Carregando…</div>
         ) : (casos ?? []).length === 0 ? (
-          <Empty icon={<Ic.Scale size={20} />} title="Nenhum caso jurídico ainda" hint="Use o botão DESBLOQUEAR CLIENTE para indicar um lead ao escritório." />
+          <Empty icon={<Ic.Scale size={20} />} title="Nenhum caso jurídico ainda" hint="Use Desbloquear cliente para indicar um lead ao escritório." />
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
             <thead>
               <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--line)" }}>
-                {["Caso", "Cliente", "Status jurídico", "Advogado", "Próximo passo", "Multa", ""].map(h => (
-                  <th key={h} style={{ textAlign: "left", padding: "9px 12px", fontWeight: 500, color: "var(--ink-3)", fontSize: 11.5, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                {["Cliente", "Etapa no jurídico", "Advogado", "Próximo passo", "Multa", ""].map(h => (
+                  <th key={h} style={{ textAlign: "left", padding: "9px 12px", fontWeight: 500, color: "var(--ink-3)", fontSize: 13.5 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1339,7 +1337,6 @@ export function RepCasos({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) {
                 return (
                   <tr key={c.id} onClick={() => lead && onOpenLead(lead)} style={{ borderBottom: "1px solid var(--line)", cursor: lead ? "pointer" : "default" }}
                     onMouseEnter={e=>e.currentTarget.style.background="var(--hover)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                    <td style={{ padding: "10px 12px" }}><span className="mono" style={{ color: "var(--ink)", fontWeight: 500 }}>{c.id.slice(0, 8)}</span></td>
                     <td style={{ padding: "10px 12px" }}>
                       <div style={{ fontWeight: 500 }}>{c.lead?.empresa ?? "—"}</div>
                       <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>{c.lead?.contato ?? ""}</div>

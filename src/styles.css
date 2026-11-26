@@ -1,21 +1,21 @@
 :root {
   /* surfaces */
-  --bg:           oklch(0.975 0.004 260);
-  --surface:      oklch(1 0 0);
-  --surface-2:    oklch(0.97 0.004 260);
-  --surface-3:    oklch(0.945 0.005 260);
-  --hover:        oklch(0.96 0.006 260);
+  --bg:           #eef1f6;
+  --surface:      #ffffff;
+  --surface-2:    #f5f7fa;
+  --surface-3:    #e9edf3;
+  --hover:        #f0f3f8;
 
   /* lines */
-  --line:         oklch(0.915 0.006 260);
-  --line-2:       oklch(0.87 0.008 260);
-  --line-strong:  oklch(0.80 0.01 260);
+  --line:         #dfe4ec;
+  --line-2:       #c9d1dd;
+  --line-strong:  #aab4c4;
 
   /* text */
-  --ink:          oklch(0.20 0.02 255);
-  --ink-2:        oklch(0.36 0.02 255);
-  --ink-3:        oklch(0.50 0.015 255);
-  --ink-4:        oklch(0.62 0.012 255);
+  --ink:          #0e1a33;
+  --ink-2:        #33415c;
+  --ink-3:        #5a6780;
+  --ink-4:        #7d889c;
 
   /* status (cores semânticas — não mudam com tema) */
   --rose:         oklch(0.55 0.16 25);
@@ -33,26 +33,41 @@
   --violet:       oklch(0.55 0.13 290);
 }
 
-/* === Brand — Sinal: azul-elétrico + magenta === */
+/* === Marca Advox Telecom — cores tiradas do logo ===
+ * Noite  #01153f  azul-marinho do "ADVOX" (menu lateral, botões principais)
+ * Sinal  #0070e0  azul do arco (ação "Desbloquear cliente", destaques)
+ * Céu    #00b0f0  ciano do arco (só no funil e em detalhes de sinal)
+ * --navy pode ser trocada pela cor da revenda (useApplyRevendaTheme). */
 :root {
-  --navy:         oklch(0.38 0.18 250);
-  --navy-2:       oklch(0.30 0.18 250);
-  --navy-ink:     oklch(0.99 0.005 250);
-  /* tons claros derivados da cor da marca (seguem o branding da revenda) */
+  --navy:         #0b2f73;
+  --navy-2:       #082459;
+  --navy-ink:     #ffffff;
   --navy-soft:    color-mix(in oklch, var(--navy) 8%, white);
   --navy-soft-2:  color-mix(in oklch, var(--navy) 14%, white);
-  --gold:         oklch(0.58 0.22 340);
-  --gold-2:       oklch(0.48 0.22 340);
-  --gold-ink:     oklch(0.99 0.005 340);
-  --gold-soft:    oklch(0.96 0.04 340);
-  --gold-soft-2:  oklch(0.92 0.07 340);
-  --gold-border:  oklch(0.85 0.08 340);
-  --gold-deep:    oklch(0.42 0.18 340);
+  --gold:         #0070e0;
+  --gold-2:       #005fc2;
+  --gold-ink:     #ffffff;
+  --gold-soft:    #e5f1fd;
+  --gold-soft-2:  #cfe5fb;
+  --gold-border:  #a9cff5;
+  --gold-deep:    #0058b8;
+  --ceu:          #00b0f0;
+
+  /* menu lateral */
+  --sidebar:          #01153f;
+  --sidebar-line:     rgba(255, 255, 255, .08);
+  --sidebar-ink:      #ffffff;
+  --sidebar-ink-2:    rgba(255, 255, 255, .72);
+  --sidebar-ink-3:    rgba(255, 255, 255, .45);
+  --sidebar-ativo:    rgba(255, 255, 255, .09);
+  --sidebar-hover:    rgba(255, 255, 255, .05);
+
+  --fonte-titulo: 'Barlow Semi Condensed', 'Barlow', system-ui, sans-serif;
 }
 
 /* pipeline + shadows — globais */
 :root {
-  --pc-novo:        oklch(0.55 0.02 255);
+  --pc-novo:        #4a78c2;
   --pc-contato:     oklch(0.55 0.11 235);
   --pc-proposta:    oklch(0.55 0.12 285);
   --pc-travado:     oklch(0.55 0.14 35);
@@ -81,15 +96,16 @@
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 13.5px;
+  font-family: 'Barlow', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
   color: var(--ink);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
-.mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-feature-settings: "zero", "ss01"; }
-.serif { font-family: 'Newsreader', Georgia, serif; }
+.mono { font-variant-numeric: tabular-nums; }
+.titulo { font-family: var(--fonte-titulo); letter-spacing: 0; }
+h1, h2 { font-family: var(--fonte-titulo); letter-spacing: 0 !important; }
 
 button { font-family: inherit; }
 input, textarea, select { font-family: inherit; font-size: inherit; color: inherit; }
@@ -111,7 +127,7 @@ input:focus, textarea:focus, select:focus { outline: none; }
 .grab { cursor: grab; }
 .grab:active { cursor: grabbing; }
 
-::selection { background: oklch(0.85 0.05 80); color: var(--ink); }
+::selection { background: #bfe6fb; color: var(--ink); }
 
 @keyframes pulse-soft {
   0%, 100% { opacity: 0.55; }
@@ -186,8 +202,7 @@ input:focus, textarea:focus, select:focus { outline: none; }
   .notas-grid > section { padding: 14px !important; }
   .clientes-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; padding: 10px 12px !important; gap: 6px !important; }
   .clientes-kpis > button { padding: 8px 9px !important; }
-  .clientes-kpis > button > span:first-child { display: none !important; }
-  .clientes-kpis > button > span:last-child > span:first-child { font-size: 9px !important; letter-spacing: 0.04em !important; }
+  .clientes-kpis > button > span:first-child { font-size: 12px !important; }
   .seg-rola { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
   .seg-rola::-webkit-scrollbar { display: none; }
   .seg-rola > button { flex-shrink: 0; white-space: nowrap; }
@@ -322,6 +337,7 @@ input:focus, textarea:focus, select:focus { outline: none; }
 /* === Acabamento (estilo BuildClinic) === */
 .nav-item { transition: background 120ms ease, color 120ms ease; }
 .nav-item:hover { background: var(--hover); }
+.nav-lateral:hover { background: var(--sidebar-hover); color: var(--sidebar-ink) !important; }
 .card-hover { transition: box-shadow 140ms ease, transform 140ms ease, border-color 140ms ease; }
 .card-hover:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); border-color: var(--line-2); }
 .modal-shell { border-radius: 14px !important; }
@@ -361,7 +377,7 @@ button.org-cartao:hover { border-color: var(--line-2); box-shadow: var(--shadow-
 .org-solto { width: 100%; padding: 10px; border: 1.5px dashed var(--amber-border); border-radius: 10px; background: var(--amber-soft); }
 
 /* ======================================================================
- * Temas — White é o :root acima. Grey (grafite, estilo Claude/ChatGPT)
+ * Temas — White é o :root acima. Grey (grafite)
  * e Dark trocam as superfícies, linhas e textos; as cores de marca
  * clareiam um pouco para ter contraste no fundo escuro.
  * O atributo vem de src/tema.tsx (<html data-tema="grey|dark">).
@@ -388,17 +404,19 @@ button.org-cartao:hover { border-color: var(--line-2); box-shadow: var(--shadow-
   --teal:         oklch(0.72 0.10 195);
   --violet:       oklch(0.72 0.12 290);
 
-  --navy:         oklch(0.64 0.17 250);
-  --navy-2:       oklch(0.58 0.17 250);
   --navy-ink:     oklch(0.99 0.005 250);
   --navy-soft:    color-mix(in oklch, var(--navy) 18%, var(--surface));
   --navy-soft-2:  color-mix(in oklch, var(--navy) 28%, var(--surface));
-  --gold:         oklch(0.64 0.21 340);
-  --gold-2:       oklch(0.74 0.17 340);
-  --gold-soft:    oklch(0.30 0.08 340);
-  --gold-soft-2:  oklch(0.36 0.10 340);
-  --gold-border:  oklch(0.46 0.12 340);
-  --gold-deep:    oklch(0.78 0.15 340);
+  --gold:         #1f86f0;
+  --gold-2:       #4a9df3;
+  --gold-soft:    color-mix(in oklch, #1f86f0 20%, var(--surface));
+  --gold-soft-2:  color-mix(in oklch, #1f86f0 30%, var(--surface));
+  --gold-border:  color-mix(in oklch, #1f86f0 45%, var(--surface));
+  --gold-deep:    #7cbaf7;
+  --navy:         #4a8ff0;
+  --navy-2:       #3b7fe0;
+  --sidebar:      color-mix(in oklch, var(--bg) 70%, black);
+  --sidebar-line: var(--line);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .30);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, .35), 0 1px 2px rgba(0, 0, 0, .30);

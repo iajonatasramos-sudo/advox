@@ -363,7 +363,7 @@ export function useAuth() {
 function humanizeAuthError(msg: string): string {
   const lower = msg.toLowerCase();
   if (lower.includes("invalid login credentials")) return "Email ou senha incorretos.";
-  if (lower.includes("email not confirmed")) return "Confirme seu email antes de entrar — verifique sua caixa.";
+  if (lower.includes("email not confirmed")) return "Confirme seu e-mail antes de entrar. O link está na sua caixa de entrada.";
   if (lower.includes("user already registered")) return "Este email já está cadastrado. Tente entrar.";
   if (lower.includes("password should be at least")) return "A senha precisa ter no mínimo 6 caracteres.";
   if (lower.includes("invalid email")) return "Email inválido.";
@@ -613,7 +613,7 @@ function Cadastro({ onBack }: { onBack: () => void }) {
       <AuthShell title="Confirme seu email">
         <SuccessMsg>Enviamos um link para <strong>{email}</strong>. Abra a caixa e clique no link para ativar sua conta.</SuccessMsg>
         <p style={{ fontSize: 12.5, color: "var(--ink-2)", lineHeight: 1.55 }}>
-          Após confirmar, você será encaminhado para a tela de aprovação — o coordenador da revenda <strong>{revendas.find(r => r.id === revendaId)?.nome || "selecionada"}</strong> precisa liberar seu acesso.
+          Depois de confirmar, o coordenador da revenda <strong>{revendas.find(r => r.id === revendaId)?.nome || "selecionada"}</strong> precisa aprovar seu acesso.
         </p>
         <Btn variant="default" onClick={onBack} style={{ width: "100%", marginTop: 16, justifyContent: "center" }}>Voltar ao login</Btn>
       </AuthShell>
@@ -626,7 +626,7 @@ function Cadastro({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <AuthShell title="Criar conta de Consultor" subtitle="Consultores de telecom — escolha sua revenda e aguarde a aprovação do coordenador.">
+    <AuthShell title="Criar conta de consultor" subtitle="Escolha sua revenda. O coordenador aprova seu acesso.">
       {err && <ErrorMsg>{err}</ErrorMsg>}
 
       <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>

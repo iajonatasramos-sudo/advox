@@ -144,11 +144,11 @@ export function AdminDashboard() {
   const carregando = leads === null || casos === null;
 
   return (
-    <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
-      <header style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+    <div className="page-pad" style={{ padding: "22px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <header style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Visão Geral</h1>
-          <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>Panorama operacional do escritório e da rede de representantes</div>
+          <h1 className="page-title" style={{ margin: 0, fontSize: 28, fontWeight: 600 }}>Visão geral</h1>
+          <div style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 2 }}>Escritório e revendas parceiras</div>
         </div>
         <div className="seg-rola" style={{ display: "inline-flex", background: "var(--surface-3)", border: "1px solid var(--line)", borderRadius: 5, padding: 2 }}>
           {[["hoje","Hoje"],["semana","Semana"],["mes","Mês"]].map(([id, l]) => (
@@ -171,10 +171,10 @@ export function AdminDashboard() {
       </div>
 
       <div className="grid-2col" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 14 }}>
-        <Section title="Funil — Pipeline Jurídico" subtitle={periodo === "hoje" ? "Hoje" : periodo === "semana" ? "Últimos 7 dias" : "Mês corrente"}>
+        <Section title="Casos no jurídico, por etapa" subtitle={periodo === "hoje" ? "Hoje" : periodo === "semana" ? "Últimos 7 dias" : "Este mês"}>
           <FunilReal casos={(casos ?? []).filter(c => new Date(c.created_at) >= since)} />
         </Section>
-        <Section title="Casos por semana" subtitle="últimas 12 semanas">
+        <Section title="Casos por semana" subtitle="Últimas 12 semanas">
           <EvolucaoReal casos={casos ?? []} />
           <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-4)" }}>
             Tempo médio até liberação: <strong style={{ color: "var(--ink-2)" }}>{fmtDuracao(stats.tempoMedio)}</strong>
@@ -183,23 +183,23 @@ export function AdminDashboard() {
       </div>
 
       <div className="grid-3col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
-        <Section title="Top representantes" subtitle="indicações no período">
+        <Section title="Quem mais indicou" subtitle="Consultores, no período">
           <TopRepsReal leads={(leads ?? []).filter(l => new Date(l.created_at) >= since)} />
         </Section>
-        <Section title="Top advogados" subtitle="casos liberados no período">
+        <Section title="Quem mais liberou" subtitle="Advogados, no período">
           <TopAdvsReal casos={(casos ?? []).filter(c => c.status === "liberado" && new Date(c.created_at) >= since)} />
         </Section>
-        <Section title="Casos por estado" subtitle="distribuição UF">
+        <Section title="Casos por estado">
           <HeatmapReal casos={(casos ?? []).filter(c => new Date(c.created_at) >= since)} />
         </Section>
       </div>
 
       <div className="grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-        <Section title="Cadastros pendentes" subtitle={`${(pendentes ?? []).length} aguardando aprovação`} noPad>
+        <Section title="Cadastros para aprovar" noPad>
           {pendentes === null ? (
             <div style={{ padding: 16, fontSize: 12.5, color: "var(--ink-3)" }}>Carregando…</div>
           ) : pendentes.length === 0 ? (
-            <Empty icon={<Ic.Check size={18} />} title="Nenhum cadastro pendente" hint="Tudo em dia." />
+            <Empty icon={<Ic.Check size={18} />} title="Nenhum cadastro esperando aprovação" />
           ) : (
             pendentes.map(p => (
               <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: "1px solid var(--line)" }}>
@@ -217,11 +217,11 @@ export function AdminDashboard() {
             ))
           )}
         </Section>
-        <Section title="Auditoria recente" subtitle="últimas ações no sistema" noPad>
+        <Section title="Últimas ações no sistema" noPad>
           {auditoria === null ? (
             <div style={{ padding: 16, fontSize: 12.5, color: "var(--ink-3)" }}>Carregando…</div>
           ) : auditoria.length === 0 ? (
-            <Empty icon={<Ic.Audit size={18} />} title="Sem registros ainda" hint="Ações no sistema vão aparecer aqui." />
+            <Empty icon={<Ic.Audit size={18} />} title="Nenhuma ação registrada ainda" />
           ) : (
             auditoria.slice(0, 6).map((a, i) => (
               <div key={a.id} style={{ display: "flex", gap: 10, padding: "10px 14px", borderBottom: i < auditoria.length - 1 ? "1px solid var(--line)" : 0, fontSize: 12 }}>
@@ -319,10 +319,10 @@ function TopRepsReal({ leads }: { leads: UiLead[] }) {
     });
     return Array.from(map.values()).sort((a, b) => b.ind - a.ind).slice(0, 5);
   }, [leads]);
-  if (items.length === 0) return <Empty icon={<Ic.Users size={18} />} title="Sem indicações no período" hint="Os top reps vão aparecer aqui." />;
+  if (items.length === 0) return <Empty icon={<Ic.Users size={18} />} title="Sem indicações no período" hint="Quando consultores indicarem leads, eles aparecem aqui." />;
   return (
     <RankList items={items.map(r => ({
-      avatar: r.nome, titulo: r.nome, sub: r.revenda, valor: r.ind, suffix: `ind. · ${fmtBRL(r.valor)}`,
+      avatar: r.nome, titulo: r.nome, sub: r.revenda, valor: r.ind, suffix: fmtBRL(r.valor),
     }))} />
   );
 }
@@ -344,7 +344,7 @@ function TopAdvsReal({ casos }: { casos: UiCaso[] }) {
       .slice(0, 5)
       .map(a => ({ ...a, tempo: a.tempoN > 0 ? Math.round(a.tempoSum / a.tempoN) : 0 }));
   }, [casos]);
-  if (items.length === 0) return <Empty icon={<Ic.Gavel size={18} />} title="Sem casos liberados no período" hint="Os top advogados vão aparecer aqui." />;
+  if (items.length === 0) return <Empty icon={<Ic.Gavel size={18} />} title="Sem casos liberados no período" hint="Quando um caso for liberado, o advogado aparece aqui." />;
   return (
     <RankList items={items.map(a => ({
       avatar: a.nome, titulo: a.nome, sub: `tempo médio ${a.tempo}d`, valor: a.resolvidos, suffix: "casos",
@@ -457,12 +457,12 @@ export function AdminRepresentantes() {
   const ativosCount = all.filter(r => r.status === "ativo").length;
 
   return (
-    <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
-      <header style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+    <div className="page-pad" style={{ padding: "22px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <header style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Pessoas das revendas</h1>
+          <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>Pessoas das revendas</h1>
           <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
-            {reps === null ? "Carregando…" : `${all.length} contas · ${pendentesCount} pendentes · ${ativosCount} ativas`}
+            {reps === null ? "Carregando…" : `${ativosCount} ativas, ${pendentesCount} esperando aprovação`}
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -508,7 +508,7 @@ export function AdminRepresentantes() {
             <thead>
               <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--line)" }}>
                 {["Pessoa", "Função", "Email", "Revenda", "Local", "Status", "Desde", ""].map(h => (
-                  <th key={h} style={{ textAlign: "left", padding: "9px 12px", fontWeight: 500, color: "var(--ink-3)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                  <th key={h} style={{ textAlign: "left", padding: "9px 12px", fontWeight: 500, color: "var(--ink-3)", fontSize: 13 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -520,7 +520,6 @@ export function AdminRepresentantes() {
                       <Avatar name={r.nome} size={26} />
                       <div>
                         <div style={{ fontWeight: 500 }}>{r.nome}</div>
-                        <div style={{ fontSize: 11, color: "var(--ink-4)" }} className="mono">{r.id.slice(0, 8)}…</div>
                       </div>
                     </div>
                   </td>
@@ -627,12 +626,12 @@ export function AdminRevendas() {
   );
 
   return (
-    <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
-      <header style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+    <div className="page-pad" style={{ padding: "22px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <header style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Revendas</h1>
+          <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>Revendas</h1>
           <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
-            {list === null ? "Carregando…" : `${all.length} cadastradas · ${all.filter(r=>r.status==="ativo").length} ativas`}
+            {list === null ? "Carregando…" : `${all.filter(r=>r.status==="ativo").length} de ${all.length} ativas`}
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -658,7 +657,7 @@ export function AdminRevendas() {
           <Empty
             icon={<Ic.Building size={20} />}
             title="Nenhuma revenda cadastrada"
-            hint="Clique em 'Nova empresa' — ela já nasce com a revenda sede."
+            hint="Use Nova empresa. Toda empresa já começa com a revenda sede."
             action={<Btn variant="primary" size="sm" icon={<Ic.Plus size={12} />} onClick={() => setShowNew(true)}>Nova empresa</Btn>}
           />
         ) : (
@@ -666,7 +665,7 @@ export function AdminRevendas() {
             <thead>
               <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--line)" }}>
                 {["Revenda", "Empresa", "Proprietário", "Status", "Desde", ""].map(h => (
-                  <th key={h} style={{ textAlign: "left", padding: "9px 12px", fontWeight: 500, color: "var(--ink-3)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                  <th key={h} style={{ textAlign: "left", padding: "9px 12px", fontWeight: 500, color: "var(--ink-3)", fontSize: 13 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -702,7 +701,7 @@ export function AdminRevendas() {
                         <div style={{ fontSize: 11, color: "var(--ink-4)" }}>{r.empresa.proprietario.email}</div>
                       </div>
                     ) : (
-                      <span style={{ color: "var(--ink-4)", fontStyle: "italic" }}>Sem proprietário — convide em Pessoas</span>
+                      <span style={{ color: "var(--ink-4)", fontStyle: "italic" }}>Sem proprietário. Convide em Pessoas.</span>
                     )}
                   </td>
                   <td style={{ padding: "10px 12px" }}>
@@ -858,12 +857,12 @@ export function AdminAdvogados() {
   const pendentes = all.filter(a => a.status === "pendente").length;
 
   return (
-    <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
-      <header style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+    <div className="page-pad" style={{ padding: "22px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <header style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Advogados</h1>
+          <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>Advogados</h1>
           <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
-            {list === null ? "Carregando…" : `${all.length} colaboradores · ${ativos} ativos · ${pendentes} pendentes`}
+            {list === null ? "Carregando…" : `${ativos} ativos, ${pendentes} esperando aprovação`}
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -946,7 +945,7 @@ export function AdminAdvogados() {
 function Stat({ label, v }: { label: string; v: number | string }) {
   return (
     <div style={{ background: "var(--surface-2)", border: "1px solid var(--line)", borderRadius: 5, padding: "8px 10px" }}>
-      <div style={{ fontSize: 10.5, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
+      <div style={{ fontSize: 13.5, color: "var(--ink-3)" }}>{label}</div>
       <div style={{ fontSize: 17, fontWeight: 600, marginTop: 2 }} className="mono">{v}</div>
     </div>
   );
@@ -965,12 +964,12 @@ export function AdminAuditoria() {
   );
 
   return (
-    <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
-      <header style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+    <div className="page-pad" style={{ padding: "22px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <header style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Auditoria</h1>
+          <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>Auditoria</h1>
           <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
-            {items === null ? "Carregando…" : `${items.length} eventos · rastreabilidade de todas as ações`}
+            {items === null ? "Carregando…" : "Quem fez o quê, e quando"}
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -990,7 +989,7 @@ export function AdminAuditoria() {
         {items === null ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>Carregando auditoria…</div>
         ) : filtered.length === 0 ? (
-          <Empty icon={<Ic.Audit size={20} />} title="Nenhum evento ainda" hint="Eventos aparecem automaticamente quando alguém cria/edita leads, casos, profiles ou revendas." />
+          <Empty icon={<Ic.Audit size={20} />} title="Nenhum evento ainda" hint="Toda criação ou alteração de lead, caso, pessoa ou revenda fica registrada aqui." />
         ) : filtered.map((a, i) => {
           const isOpen = open === a.id;
           return (
@@ -1021,7 +1020,7 @@ export function AdminAuditoria() {
               </div>
               {isOpen && (
                 <div style={{ padding: "12px 14px 16px 124px", background: "var(--surface-2)", borderTop: "1px solid var(--line)" }}>
-                  <div style={{ fontSize: 11, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6, fontWeight: 500 }}>Detalhes</div>
+                  <div style={{ fontSize: 13, color: "var(--ink-3)", marginBottom: 6, fontWeight: 500 }}>Detalhes</div>
                   <pre className="mono" style={{ margin: 0, fontSize: 11.5, color: "var(--ink-2)", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{JSON.stringify(a.details ?? {}, null, 2)}</pre>
                 </div>
               )}
@@ -1040,9 +1039,9 @@ export function AdminTodosLeads({ onOpenLead }: { onOpenLead: (l: UiLead) => voi
   return (
     <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
       <header>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Todos os Leads</h1>
+        <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>Todos os leads</h1>
         <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
-          {leads === null ? "Carregando…" : `Universo de leads do sistema · ${leads.length} totais`}
+          {leads === null ? "Carregando…" : `${leads.length} leads em todas as revendas`}
         </div>
       </header>
       <div className="toolbar-row" style={{ display: "flex", gap: 8, padding: "10px 12px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6 }}>
@@ -1092,7 +1091,7 @@ function ReatribuirModal({ caso, onClose }: { caso: UiCaso; onClose: () => void 
           </span>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, fontWeight: 600 }}>Reatribuir advogado</div>
-            <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>Caso {caso.id.slice(0, 8)} · {caso.lead?.empresa ?? "—"}</div>
+            <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>{caso.lead?.empresa ?? "Cliente sem nome"}</div>
           </div>
           <button onClick={onClose} style={{ background: "transparent", border: 0, color: "var(--ink-3)", cursor: "pointer", padding: 6 }}>
             <Ic.X size={16} />
@@ -1132,22 +1131,22 @@ export function AdminTodosCasos({ onOpenCaso }: { onOpenCaso: (c: UiCaso) => voi
   return (
     <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
       <header>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Todos os Casos</h1>
+        <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>Todos os casos</h1>
         <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
-          {casos === null ? "Carregando…" : `Universo de casos jurídicos · ${casos.length} totais`}
+          {casos === null ? "Carregando…" : `${casos.length} casos no escritório`}
         </div>
       </header>
       <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 6, overflow: "hidden" }}>
         {casos === null ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>Carregando…</div>
         ) : casos.length === 0 ? (
-          <Empty icon={<Ic.Scale size={20} />} title="Nenhum caso jurídico ainda" hint="Os casos aparecem aqui quando os representantes usarem 'Desbloquear Cliente' para indicá-los." />
+          <Empty icon={<Ic.Scale size={20} />} title="Nenhum caso jurídico ainda" hint="Quando um consultor usar Desbloquear cliente, o caso aparece aqui." />
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
             <thead>
               <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--line)" }}>
-                {["Caso", "Cliente", "Advogado", "Status", "Multa", "Dias", ""].map(h => (
-                  <th key={h} style={{ textAlign: "left", padding: "9px 12px", fontWeight: 500, color: "var(--ink-3)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                {["Cliente", "Advogado", "Etapa", "Multa", "Dias", ""].map(h => (
+                  <th key={h} style={{ textAlign: "left", padding: "9px 12px", fontWeight: 500, color: "var(--ink-3)", fontSize: 13 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1155,7 +1154,6 @@ export function AdminTodosCasos({ onOpenCaso }: { onOpenCaso: (c: UiCaso) => voi
               {casos.map(c => (
                 <tr key={c.id} style={{ borderBottom: "1px solid var(--line)" }}
                   onMouseEnter={e=>e.currentTarget.style.background="var(--hover)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                  <td style={{ padding: "10px 12px", cursor: "pointer" }} onClick={() => onOpenCaso(c)} className="mono"><span style={{ fontWeight: 500 }}>{c.id.slice(0, 8)}</span></td>
                   <td style={{ padding: "10px 12px", cursor: "pointer" }} onClick={() => onOpenCaso(c)}>
                     <div style={{ fontWeight: 500 }}>{c.lead?.empresa ?? "—"}</div>
                     <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{c.lead?.contato ?? ""}{c.lead?.uf ? ` · ${c.lead.uf}` : ""}</div>
@@ -1184,7 +1182,7 @@ export function AdminConfig() {
   return (
     <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14, maxWidth: 1100 }}>
       <header>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Configurações</h1>
+        <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>Configurações</h1>
         <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>Ajustes administrativos do sistema</div>
       </header>
 
@@ -1278,7 +1276,7 @@ export function AdminConfig() {
             <Section title="Permissões">
               <p style={{ margin: 0, fontSize: 12.5, color: "var(--ink-2)", lineHeight: 1.6 }}>
                 Os perfis padrão (Representante, Advogado, Admin) já cobrem os acessos previstos no fluxo.
-                Permissões granulares estão preparadas como gancho futuro — entre em contato com o suporte
+                Para permissões diferentes destas, fale com o suporte
                 caso precise habilitar exceções específicas.
               </p>
             </Section>

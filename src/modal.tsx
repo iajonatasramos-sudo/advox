@@ -164,7 +164,7 @@ export function ModalDesbloquear({ open, onClose }: { open: boolean; onClose: ()
           {data.novo === false && (
             <div>
               <Field label="Selecione um lead existente">
-                <Input full icon={<Ic.Search size={13} />} placeholder="Busca em desenvolvimento — selecione abaixo" value="" onChange={()=>{}} />
+                <Input full icon={<Ic.Search size={13} />} placeholder="Selecione o lead na lista abaixo" value="" onChange={()=>{}} />
               </Field>
               <div style={{ marginTop: 10, border: "1px solid var(--line)", borderRadius: 5, maxHeight: 280, overflow: "auto" }}>
                 {(leads ?? []).filter(l => !["travado","aguardando","fechado","perdido"].includes(l.status)).map(l => (
@@ -229,7 +229,7 @@ export function ModalDesbloquear({ open, onClose }: { open: boolean; onClose: ()
               value={data.valor} onChange={e=>setData({...data, valor:e.target.value})} placeholder="48.000" />
           </Field>
           <div style={{ gridColumn: "1 / -1" }}>
-            <Field label="Breve descrição" hint="Conte ao escritório o contexto — quanto mais claro, mais rápido o avanço">
+            <Field label="Breve descrição" hint="Conte ao escritório o que aconteceu. Quanto mais claro, mais rápido.">
               <textarea value={data.desc} onChange={e=>setData({...data, desc:e.target.value})} placeholder="Cliente possui 14 linhas com a operadora, contrato renovou automaticamente em janeiro e a fidelidade venceu há 6 meses…"
                 style={{ width: "100%", minHeight: 90, padding: "8px 10px", border: "1px solid var(--line-2)", borderRadius: 5, fontSize: 13, lineHeight: 1.5, background: "var(--surface)", color: "var(--ink)", resize: "vertical", fontFamily: "inherit" }} />
             </Field>
@@ -273,7 +273,7 @@ export function ModalDesbloquear({ open, onClose }: { open: boolean; onClose: ()
           </div>
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.01em" }}>Indicação enviada para o Advox</h2>
           <p style={{ marginTop: 8, color: "var(--ink-2)", fontSize: 13.5, maxWidth: 480, marginInline: "auto", lineHeight: 1.55 }}>
-            Caso <strong className="mono">{casoIdCriado?.slice(0, 8) ?? "—"}</strong> criado. O lead foi movido para <strong>Travado (Advox)</strong> no seu pipeline.
+            O caso foi enviado ao escritório e o lead foi para a etapa <strong>Travado (Advox)</strong>.
           </p>
         </div>
       );
@@ -298,7 +298,7 @@ export function ModalDesbloquear({ open, onClose }: { open: boolean; onClose: ()
             <Ic.Unlock size={15} />
           </span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>Desbloquear Cliente</div>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>Desbloquear cliente</div>
             <div style={{ fontSize: 11.5, color: "var(--ink-3)" }}>Indicar para o time jurídico Advox</div>
           </div>
           <button onClick={onClose} style={{ background: "transparent", border: 0, color: "var(--ink-3)", cursor: "pointer", padding: 6 }}>

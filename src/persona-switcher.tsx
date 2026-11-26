@@ -119,7 +119,7 @@ export function PersonaSwitcher() {
           {profile.nome.split(/\s+/).slice(0, 2).map(s => s[0]).join("").toUpperCase()}
         </span>
         <span style={{ textAlign: "left", lineHeight: 1.1 }}>
-          <span style={{ display: "block", fontSize: 8.5, fontWeight: 700, letterSpacing: "0.1em", color: imp ? "var(--amber-text)" : "var(--ink-4)" }}>VISUALIZANDO COMO</span>
+          <span style={{ display: "block", fontSize: 11, fontWeight: 500, color: imp ? "var(--amber-text)" : "var(--ink-4)" }}>Vendo como</span>
           <span style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap" }}>{profile.nome} · {rotuloPapel(profile.papel)}</span>
         </span>
         <Ic.ChevronDown size={12} color="var(--ink-3)" />
@@ -131,7 +131,7 @@ export function PersonaSwitcher() {
           background: "var(--surface)", border: "1px solid var(--line-2)", borderRadius: 12, boxShadow: "var(--shadow-lg)", display: "flex", flexDirection: "column", overflow: "hidden",
         }}>
           <div style={{ padding: "10px 12px 8px", borderBottom: "1px solid var(--line)" }}>
-            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.08em", color: "var(--ink-3)", marginBottom: 8 }}>{pessoas.length} USUÁRIOS CADASTRADOS</div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-3)", marginBottom: 8 }}>{pessoas.length} pessoas cadastradas</div>
             <div className="ring-focus" style={{ display: "flex", alignItems: "center", gap: 6, border: "1px solid var(--line)", borderRadius: 8, padding: "5px 8px" }}>
               <Ic.Search size={12} color="var(--ink-4)" />
               <input autoFocus value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar pessoa ou revenda…" style={{ border: 0, outline: 0, background: "transparent", fontSize: 12, width: "100%", color: "var(--ink)" }} />
@@ -147,7 +147,7 @@ export function PersonaSwitcher() {
             {pessoas.length === 0 && <div style={{ padding: 14, fontSize: 12, color: "var(--ink-3)" }}>Carregando…</div>}
             {grupos.map(g => (
               <div key={g.papel}>
-                <div style={{ padding: "10px 8px 4px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: "var(--ink-4)", textTransform: "uppercase" }}>{g.titulo}</div>
+                <div style={{ padding: "10px 8px 4px", fontSize: 13, fontWeight: 600, color: "var(--ink-4)" }}>{g.titulo}</div>
                 {g.itens.map(p => {
                   const atual = p.id === profile.id;
                   const bloqueado = p.papel === "admin" && !atual;
@@ -197,7 +197,7 @@ export function FaixaImpersonacao() {
       <Ic.Eye size={13} />
       <span style={{ flex: "1 1 180px", minWidth: 0, lineHeight: 1.35 }}>
         Vendo como <b>{profile.nome}</b>
-        <span className="only-desktop"> — você ({imp.adminNome}) está na conta dessa pessoa; o que fizer aqui fica registrado como ação dela.</span>
+        <span className="only-desktop">. Você ({imp.adminNome}) está na conta dessa pessoa e o que fizer aqui fica registrado no nome dela.</span>
         {erro && <span style={{ display: "block", fontWeight: 500 }}>{erro}</span>}
       </span>
       <button onClick={voltar} disabled={voltando} style={{

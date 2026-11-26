@@ -140,13 +140,13 @@ export function MeuTime({ onOpenMembro }: { onOpenMembro: (nome: string) => void
     <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
       <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Meu Time</h1>
+          <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>Meu time</h1>
           <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
             {membros === null ? "Carregando…" : (
               <>
-                {empresaNome && <>{empresaNome} · </>}
-                {contagem.length ? contagem.map(x => `${x.n} ${x.p === "rep" ? (x.n === 1 ? "consultor" : "consultores") : x.p === "coord" ? (x.n === 1 ? "coordenador" : "coordenadores") : (x.n === 1 ? "gerente" : "gerentes")}`).join(" · ") : "Sem equipe ainda"}
-                {pendentes.length > 0 && <> · <strong style={{ color: "var(--amber-text)" }}>{pendentes.length} aguardando aprovação</strong></>}
+                {empresaNome && <>{empresaNome}: </>}
+                {contagem.length ? contagem.map(x => `${x.n} ${x.p === "rep" ? (x.n === 1 ? "consultor" : "consultores") : x.p === "coord" ? (x.n === 1 ? "coordenador" : "coordenadores") : (x.n === 1 ? "gerente" : "gerentes")}`).join(", ") : "Sem equipe ainda"}
+                {pendentes.length > 0 && <>. <strong style={{ color: "var(--amber-text)" }}>{pendentes.length} aguardando aprovação</strong></>}
               </>
             )}
           </div>
@@ -264,7 +264,7 @@ function GrupoSolto({ titulo, children }: { titulo: string; children: React.Reac
   return (
     <div className="org-coluna">
       <div className="org-solto">
-        <div style={{ fontSize: 11, fontWeight: 600, color: "var(--amber-text)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--amber-text)", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
           <Ic.Warn size={12} /> {titulo}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{children}</div>
@@ -440,9 +440,9 @@ export function MinhasRevendas() {
     <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16 }}>
       <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em" }}>Revendas</h1>
+          <h1 className="page-title" style={{ margin: 0, fontSize: 26, fontWeight: 600 }}>Revendas</h1>
           <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 4 }}>
-            {empresaNome ?? "Sua empresa"} · {revendas.length} {revendas.length === 1 ? "revenda" : "revendas"}
+            {revendas.length} {revendas.length === 1 ? "revenda" : "revendas"} de {empresaNome ?? "sua empresa"}
           </div>
         </div>
         <Btn variant="primary" size="sm" icon={<Ic.Plus size={13} />} onClick={() => setEditando("nova")}>Nova revenda</Btn>

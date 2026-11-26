@@ -168,7 +168,7 @@ export function ConvidarModal({
               <span>Convite de <strong>{rotuloPapel(papel)}</strong> gerado para <strong>{email}</strong>. Expira em 7 dias.</span>
             </div>
 
-            <Field label="Link do convite" hint="Envie por email, WhatsApp ou qualquer canal — quem abrir cria a conta automaticamente.">
+            <Field label="Link do convite" hint="Envie por WhatsApp ou e-mail. Quem abrir o link cria a conta.">
               <div style={{ display: "flex", gap: 6 }}>
                 <Input full value={inviteUrl} onChange={()=>{}} />
                 <Btn variant="primary" onClick={copy} icon={<Ic.Doc size={12} />}>Copiar</Btn>

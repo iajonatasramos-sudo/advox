@@ -95,16 +95,15 @@ export function Clientes({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) {
           const on = faixa === k.id;
           const cor = k.cor ?? "var(--navy)";
           return (
-            <button key={k.id} onClick={() => setFaixa(on && k.id !== "todos" ? "todos" : k.id)} style={{
-              display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", cursor: "pointer", textAlign: "left",
-              borderRadius: 10, border: `1px solid ${on ? cor : "var(--line)"}`, background: on ? `color-mix(in oklch, ${cor} 7%, var(--surface))` : "var(--surface)",
-              boxShadow: on ? `0 0 0 3px color-mix(in oklch, ${cor} 14%, transparent)` : "var(--shadow-sm)", minWidth: 0,
+            <button key={k.id} onClick={() => setFaixa(on && k.id !== "todos" ? "todos" : k.id)} aria-pressed={on} style={{
+              display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 0, padding: "8px 12px", cursor: "pointer", textAlign: "left",
+              borderRadius: 8, border: `1px solid ${on ? cor : "var(--line)"}`, background: on ? `color-mix(in oklch, ${cor} 7%, var(--surface))` : "var(--surface)",
+              minWidth: 0, font: "inherit",
             }}>
-              <span style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", background: `color-mix(in oklch, ${cor} 12%, var(--surface))`, color: cor }}>{k.icon}</span>
-              <span style={{ minWidth: 0 }}>
-                <span style={{ display: "block", fontSize: 10, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--ink-3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{k.label}</span>
-                <span style={{ display: "block", fontSize: 19, fontWeight: 700, color: k.id === "todos" ? "var(--ink)" : cor, lineHeight: 1.15 }}>{contagem[k.id]}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 500, color: "var(--ink-3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
+                {k.id !== "todos" && <span style={{ width: 8, height: 8, borderRadius: 2, background: cor, flexShrink: 0 }} />}{k.label}
               </span>
+              <span className="titulo mono" style={{ fontSize: 24, fontWeight: 600, color: "var(--ink)", lineHeight: 1.15 }}>{contagem[k.id]}</span>
             </button>
           );
         })}
@@ -152,7 +151,7 @@ export function Clientes({ onOpenLead }: { onOpenLead: (l: UiLead) => void }) {
               <thead>
                 <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--line)", textAlign: "left" }}>
                   {["Empresa", "Contato", "Operadora", "Etapa", "Valor", "Fidelidade", ehCoord ? "Consultor" : "WhatsApp", "Criado"].map(h => (
-                    <th key={h} style={{ padding: "9px 12px", fontSize: 10.5, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", whiteSpace: "nowrap" }}>{h}</th>
+                    <th key={h} style={{ padding: "9px 12px", fontSize: 13.5, fontWeight: 600, color: "var(--ink-3)", whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -188,7 +187,7 @@ function CartaoCliente({ l, onClick }: { l: UiLead; onClick: () => void }) {
   const aberto = !["fechado", "perdido"].includes(l.status);
   const sub = l.status === "perdido" && l.motivo_perda ? `Perdido · ${l.motivo_perda}`
     : l.advox_caso_id ? "No jurídico"
-    : aberto && d !== null && d <= 60 ? (d < 0 ? "Fidelidade vencida — sem multa" : `Fidelidade vence em ${d}d`)
+    : aberto && d !== null && d <= 60 ? (d < 0 ? "Fidelidade vencida, sem multa" : `Fidelidade vence em ${d}d`)
     : l.contato;
   return (
     <button onClick={onClick} className="card-hover" style={{
@@ -217,7 +216,7 @@ function EtapaTag({ s }: { s: string }) {
   const cor = corEtapa(s);
   return (
     <span style={{
-      fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", padding: "2px 8px", borderRadius: 99, whiteSpace: "nowrap",
+      fontSize: 13, fontWeight: 600, padding: "2px 8px", borderRadius: 99, whiteSpace: "nowrap",
       color: `color-mix(in oklch, ${cor} 75%, black)`, background: `color-mix(in oklch, ${cor} 13%, var(--surface))`,
     }}>{rotuloEtapa(s).replace(" (Advox)", "")}</span>
   );

@@ -125,27 +125,27 @@ export type KpiCard = {
 };
 
 export const PIPELINE_COMERCIAL: Stage[] = [
-  { id: "novo",        label: "Novo Lead",            color: "var(--pc-novo)" },
-  { id: "contato",     label: "Em Contato",           color: "var(--pc-contato)" },
-  { id: "proposta",    label: "Proposta Enviada",     color: "var(--pc-proposta)" },
+  { id: "novo",        label: "Novo lead",            color: "var(--pc-novo)" },
+  { id: "contato",     label: "Em contato",           color: "var(--pc-contato)" },
+  { id: "proposta",    label: "Proposta enviada",     color: "var(--pc-proposta)" },
   { id: "travado",     label: "Travado (Advox)",      color: "var(--pc-travado)" },
-  { id: "aguardando",  label: "Aguardando Liberação", color: "var(--pc-aguardando)" },
-  { id: "negociacao",  label: "Negociação Final",     color: "var(--pc-negociacao)" },
+  { id: "aguardando",  label: "Aguardando liberação", color: "var(--pc-aguardando)" },
+  { id: "negociacao",  label: "Negociação final",     color: "var(--pc-negociacao)" },
   { id: "fechado",     label: "Fechado",              color: "var(--pc-fechado)" },
   { id: "perdido",     label: "Perdido",              color: "var(--pc-perdido)" },
 ];
 
 export const PIPELINE_JURIDICO: Stage[] = [
-  { id: "recebido",      label: "Lead Recebido",       color: "var(--pj-recebido)" },
-  { id: "analise",       label: "Em Análise",          color: "var(--pj-analise)" },
-  { id: "contato",       label: "Contato Inicial",     color: "var(--pj-contato)" },
-  { id: "honorarios",    label: "Proposta Honorários", color: "var(--pj-honorarios)" },
-  { id: "contratou",     label: "Cliente Contratou",   color: "var(--pj-contratou)" },
+  { id: "recebido",      label: "Lead recebido",       color: "var(--pj-recebido)" },
+  { id: "analise",       label: "Em análise",          color: "var(--pj-analise)" },
+  { id: "contato",       label: "Contato inicial",     color: "var(--pj-contato)" },
+  { id: "honorarios",    label: "Proposta de honorários", color: "var(--pj-honorarios)" },
+  { id: "contratou",     label: "Cliente contratou",   color: "var(--pj-contratou)" },
   { id: "documentacao",  label: "Documentação",        color: "var(--pj-documentacao)" },
   { id: "extrajudicial", label: "Extrajudicial",       color: "var(--pj-extrajudicial)" },
   { id: "judicial",      label: "Judicial",            color: "var(--pj-judicial)" },
   { id: "liberado",      label: "Liberado",            color: "var(--pj-liberado)" },
-  { id: "naoliberado",   label: "Não Liberado",        color: "var(--pj-naoliberado)" },
+  { id: "naoliberado",   label: "Não liberado",        color: "var(--pj-naoliberado)" },
   { id: "recusou",       label: "Recusou",             color: "var(--pj-recusou)" },
 ];
 

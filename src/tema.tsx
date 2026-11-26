@@ -1,5 +1,4 @@
-// Aparência do sistema: White (padrão), Grey (cinza-grafite, estilo Claude /
-// ChatGPT), Dark (escuro) ou "seguir o sistema" (claro/escuro do computador).
+// Aparência do sistema: White (padrão), Grey (cinza-grafite), Dark (escuro) ou "seguir o sistema" (claro/escuro do computador).
 // A escolha fica neste navegador (localStorage) e vale para todas as contas nele.
 import { useEffect, useState } from "react";
 import { Ic } from "./icons";
@@ -83,7 +82,7 @@ function Miniatura({ tema, metade }: { tema: Tema; metade?: Tema }) {
 const OPCOES: { id: PreferenciaTema; nome: string; texto: string }[] = [
   { id: "sistema", nome: "Seguir o sistema", texto: "Usa o claro ou escuro do seu computador." },
   { id: "white", nome: "White", texto: "Claro, o visual padrão do Advox." },
-  { id: "grey", nome: "Grey", texto: "Cinza-grafite, no estilo Claude e ChatGPT." },
+  { id: "grey", nome: "Grey", texto: "Cinza-grafite, confortável para usar o dia todo." },
   { id: "dark", nome: "Dark", texto: "Escuro, para ambientes com pouca luz." },
 ];
 

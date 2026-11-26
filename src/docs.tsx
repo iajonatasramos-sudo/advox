@@ -130,7 +130,7 @@ export function DocumentosLista({ parent }: { parent: { kind: "lead" | "caso"; i
       {docs === null ? (
         <div style={{ padding: 24, textAlign: "center", color: "var(--ink-3)", fontSize: 12.5 }}>Carregando…</div>
       ) : docs.length === 0 ? (
-        <Empty icon={<Ic.Doc size={18} />} title="Nenhum documento anexado" hint="Use o botão 'Anexar arquivo' acima para enviar contratos, faturas, procurações, etc." />
+        <Empty icon={<Ic.Doc size={18} />} title="Nenhum documento anexado" hint="Anexe contratos, faturas e procurações do cliente." />
       ) : (
         docs.map((d, i) => (
           <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderBottom: i < docs.length - 1 ? "1px solid var(--line)" : 0 }}>

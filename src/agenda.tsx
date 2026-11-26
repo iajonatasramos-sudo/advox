@@ -18,7 +18,7 @@ import type { TipoAtividade } from "./lib/database.types";
 
 /* ───────────── utilidades de data ───────────── */
 
-const DIAS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
+const DIAS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
 const inicioDia = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
@@ -169,7 +169,7 @@ export function AgendaCalendario({ onOpenLead }: { onOpenLead: (l: UiLead) => vo
 
       {/* Etiquetas (tipos) */}
       <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "2px 18px 10px", flexWrap: "wrap" }}>
-        <span style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.06em", color: "var(--ink-4)" }}>ETIQUETAS:</span>
+        <span style={{ fontSize: 13, color: "var(--ink-3)" }}>Etiquetas:</span>
         <button onClick={() => setTipos([])} style={chip(tipos.length === 0, "var(--navy)")}>Todas</button>
         {TIPOS_ATIVIDADE.map(t => {
           const on = tipos.includes(t.id);
@@ -222,7 +222,7 @@ function Semana({ inicio, doDia, onNova, onAbrir }: { inicio: Date; doDia: (d: D
         return (
           <div key={i} style={{ borderRight: i < 6 ? "1px solid var(--line)" : 0, display: "flex", flexDirection: "column", minWidth: 0, background: eHoje ? "color-mix(in oklch, var(--navy) 3%, var(--surface))" : undefined }}>
             <div style={{ textAlign: "center", padding: "10px 4px 8px", borderBottom: "1px solid var(--line)", background: eHoje ? "var(--navy-soft)" : "var(--surface-2)" }}>
-              <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.06em", color: eHoje ? "var(--navy)" : "var(--ink-3)" }}>{DIAS[d.getDay()]}</div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: eHoje ? "var(--navy)" : "var(--ink-3)" }}>{DIAS[d.getDay()]}</div>
               <div style={{ fontSize: 19, fontWeight: 700, color: eHoje ? "var(--navy)" : "var(--ink)" }}>{d.getDate()}</div>
             </div>
             <div style={{ padding: 6, display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
@@ -244,7 +244,7 @@ function Mes({ ref_, doDia, onNova, onAbrir, onDia }: { ref_: Date; doDia: (d: D
   return (
     <div style={{ overflowX: "auto" }}>
       <div className="agenda-mes-cab" style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(110px, 1fr))", borderBottom: "1px solid var(--line)", background: "var(--surface-2)" }}>
-        {DIAS.map(d => <div key={d} style={{ textAlign: "center", padding: "8px 0", fontSize: 10.5, fontWeight: 600, letterSpacing: "0.06em", color: "var(--ink-3)" }}>{d}</div>)}
+        {DIAS.map(d => <div key={d} style={{ textAlign: "center", padding: "8px 0", fontSize: 12.5, fontWeight: 600, color: "var(--ink-3)" }}>{d}</div>)}
       </div>
       <div className="agenda-mes-grade" style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(110px, 1fr))" }}>
         {celulas.map((d, i) => {
@@ -434,7 +434,7 @@ function AtividadeModal({ dia, tarefa, onClose, onOpenLead }: { dia?: Date; tare
               ))}
             </div>
           </Field>
-          {tarefa?.autor && !meu && <div style={{ fontSize: 12, color: "var(--ink-3)" }}>Atividade de {tarefa.autor.nome} — só quem criou pode editar.</div>}
+          {tarefa?.autor && !meu && <div style={{ fontSize: 12, color: "var(--ink-3)" }}>Atividade de {tarefa.autor.nome}. Só quem criou pode editar.</div>}
           <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 4 }}>
             {tarefa && meu && <Btn variant="danger" size="sm" icon={<Ic.Trash size={12} />} onClick={excluir}>Excluir</Btn>}
             <div style={{ flex: 1 }} />
@@ -590,7 +590,7 @@ function NotasPanel() {
           <div style={{ maxWidth: 760, display: "flex", flexDirection: "column", gap: 10 }}>
             {err && <div style={erroBox}>{err}</div>}
             <Input full autoFocus value={titulo} onChange={e => setTitulo(e.target.value)} placeholder="Título da nota" />
-            <Input full size="sm" value={categoria} onChange={e => setCategoria(e.target.value)} placeholder="Categoria (opcional) — ex.: Reunião, Ideias" />
+            <Input full size="sm" value={categoria} onChange={e => setCategoria(e.target.value)} placeholder="Categoria (opcional), ex.: Reunião" />
             <textarea value={conteudo} onChange={e => setConteudo(e.target.value)} rows={18} placeholder="Escreva aqui…" style={{
               width: "100%", resize: "vertical", border: "1px solid var(--line)", borderRadius: 8, padding: 12, fontFamily: "inherit", fontSize: 13.5, lineHeight: 1.6, color: "var(--ink)", background: "var(--surface)",
             }} />
@@ -617,7 +617,7 @@ function NotasPanel() {
             </div>
           </div>
         ) : (
-          <Empty icon={<Ic.Doc size={20} />} title="Suas notas" hint="Anotações pessoais — só você vê. Crie uma nota para começar." action={<Btn size="sm" variant="primary" icon={<Ic.Plus size={12} />} onClick={() => comecarEdicao(null)}>Nova nota</Btn>} />
+          <Empty icon={<Ic.Doc size={20} />} title="Suas notas" hint="Só você vê suas notas. Crie a primeira para começar." action={<Btn size="sm" variant="primary" icon={<Ic.Plus size={12} />} onClick={() => comecarEdicao(null)}>Nova nota</Btn>} />
         )}
       </section>
     </div>
