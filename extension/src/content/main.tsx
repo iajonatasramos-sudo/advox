@@ -5,6 +5,7 @@
 import { createRoot } from 'react-dom/client';
 import { App } from '@/ui/App';
 import { iniciarBridge } from './wa';
+import { montarTranscricao } from './transcrever';
 import { abaGaveta, gavetaAberta, logado, modalConta, tema } from '@/lib/store';
 import { ALTURA_TOPBAR, LARGURA_GAVETA, LARGURA_TRILHO } from '@/lib/utils';
 import '@/styles/tokens.css';
@@ -167,6 +168,7 @@ function montar() {
 
   montarHeader();
   montarBotaoCompose();
+  montarTranscricao();
   createRoot(raiz).render(<App topbar={topbar} header={headerSinal} />);
 
   setInterval(detectarTema, 2000);

@@ -25,6 +25,12 @@ FROM nginx:1.27-alpine AS runner
 # Config customizada do Nginx (SPA + cache + gzip)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Rota /whisper/ (transcrição de áudio) — gerada na subida a partir das envs
+COPY docker/40-whisper.sh /docker-entrypoint.d/40-whisper.sh
+RUN chmod +x /docker-entrypoint.d/40-whisper.sh \
+ && mkdir -p /etc/nginx/snippets \
+ && echo 'location /whisper/ { return 404; }' > /etc/nginx/snippets/whisper.conf
+
 # Copia o build estático
 COPY --from=builder /app/dist /usr/share/nginx/html
 

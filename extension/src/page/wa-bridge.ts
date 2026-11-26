@@ -67,6 +67,43 @@ async function contatoCompleto(chat: any) {
 
 const fotosPorId = new Map<string, string | null>();
 
+// ── Áudios (transcrição) — mesma lógica do BuildChat ──
+// O data-id do DOM e o id do WPP podem divergir no remetente (@lid × @c.us);
+// o que coincide é o hash (terceiro segmento). Casamos por ele.
+const audiosConhecidos = new Map<string, any>();
+
+function hashDoId(id: string): string {
+  const partes = id.split('_');
+  return partes.length >= 3 ? partes[2] : id;
+}
+
+function hashDoModelo(m: any): string | null {
+  const curto = m?.id?.id;
+  if (typeof curto === 'string' && curto) return curto;
+  const serial = m?.id?._serialized ?? (typeof m?.id === 'string' ? m.id : null);
+  return serial ? hashDoId(serial) : null;
+}
+
+async function buscarMensagem(msgId: string): Promise<any | null> {
+  const hash = hashDoId(msgId);
+  const emCache = audiosConhecidos.get(hash);
+  if (emCache) return emCache;
+  try {
+    const m = await WPP.chat.getMessageById(msgId);
+    if (m?.id) { audiosConhecidos.set(hash, m); return m; }
+  } catch { /* id que o WPP não converte — segue para a varredura */ }
+  try {
+    const chat = WPP.chat.getActiveChat()?.id?._serialized;
+    if (!chat) return null;
+    const msgs: any[] = (await WPP.chat.getMessages(chat, { count: 500 })) ?? [];
+    const m = msgs.find((x) => hashDoModelo(x) === hash);
+    if (m) audiosConhecidos.set(hash, m);
+    return m ?? null;
+  } catch {
+    return null;
+  }
+}
+
 const comandos: Record<string, (payload: any) => Promise<any>> = {
   async ping() {
     let mainReady = false;
@@ -115,6 +152,56 @@ const comandos: Record<string, (payload: any) => Promise<any>> = {
     if (!alvo) throw new Error('Nenhuma conversa aberta.');
     await WPP.chat.sendTextMessage(alvo, texto, { createChat: true });
     return { ok: true };
+  },
+  /** Hashes das mensagens de voz/áudio carregadas na conversa aberta. */
+  async audiosDoChat() {
+    const alvo = WPP.chat.getActiveChat()?.id?._serialized;
+    if (!alvo) return { ids: [] as string[] };
+    const msgs: any[] = (await WPP.chat.getMessages(alvo, { count: 200 })) ?? [];
+    const ids: string[] = [];
+    for (const m of msgs) {
+      if (m?.type !== 'ptt' && m?.type !== 'audio') continue;
+      const hash = hashDoModelo(m);
+      if (!hash) continue;
+      ids.push(hash);
+      audiosConhecidos.set(hash, m);
+    }
+    return { ids };
+  },
+  /** Baixa (e descriptografa) a mídia de uma mensagem; devolve data URL. */
+  async downloadMedia({ msgId }: { msgId: string }) {
+    const modelo = await buscarMensagem(msgId);
+    if (!modelo) throw new Error('Não achei esta mensagem na conversa aberta. Role até ela e tente de novo.');
+    const idDoWpp: string = modelo?.id?._serialized ?? msgId;
+    const tentativas: { nome: string; executar: () => Promise<Blob> }[] = [
+      { nome: 'modelo', executar: () => WPP.chat.downloadMedia(modelo) },
+      { nome: 'id do WPP', executar: () => WPP.chat.downloadMedia(idDoWpp) },
+    ];
+    if (typeof modelo.downloadMedia === 'function') {
+      tentativas.push({ nome: 'modelo.downloadMedia', executar: () => modelo.downloadMedia() });
+    }
+    let blob: Blob | null = null;
+    const falhas: string[] = [];
+    for (const t of tentativas) {
+      try {
+        blob = await t.executar();
+        if (blob) break;
+        falhas.push(`${t.nome}: vazio`);
+      } catch (e: any) {
+        falhas.push(`${t.nome}: ${e?.message ?? e}`);
+      }
+    }
+    if (!blob) {
+      console.warn('[Advox] downloadMedia falhou —', falhas.join(' | '));
+      throw new Error(`Não consegui baixar este áudio (${falhas[0] ?? 'motivo desconhecido'}).`);
+    }
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      const leitor = new FileReader();
+      leitor.onload = () => resolve(String(leitor.result));
+      leitor.onerror = () => reject(new Error('Falha ao ler a mídia.'));
+      leitor.readAsDataURL(blob!);
+    });
+    return { dataUrl, mime: blob.type || null, tamanho: blob.size };
   },
 };
 

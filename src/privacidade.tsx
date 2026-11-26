@@ -3,7 +3,7 @@
 import React from "react";
 import { LogoAdvox } from "./ui";
 
-const ATUALIZADA_EM = "24 de novembro de 2026";
+const ATUALIZADA_EM = "26 de novembro de 2026";
 const CONTATO = "contato@advoxtelecom.com.br";
 
 function Bloco({ titulo, children }: { titulo: string; children: React.ReactNode }) {
@@ -50,6 +50,11 @@ export function PoliticaPrivacidade() {
             A extensão <strong>não lê, não copia e não armazena o conteúdo das suas conversas</strong> do WhatsApp. Ela só envia uma mensagem
             quando o próprio usuário escolhe uma mensagem rápida e a envia.
           </p>
+          <p style={{ margin: 0 }}>
+            <strong>Transcrição de áudio:</strong> quando o usuário clica em <em>Transcrever</em> numa mensagem de áudio, só aquele áudio é
+            enviado ao nosso servidor e a um provedor de reconhecimento de fala, que devolve o texto. O áudio e o texto não ficam
+            guardados no Advox: o texto aparece apenas na tela de quem pediu. Nenhum áudio é enviado sem esse clique.
+          </p>
         </Bloco>
 
         <Bloco titulo="3. Para que usamos">
@@ -72,6 +77,7 @@ export function PoliticaPrivacidade() {
             <li><strong>Dentro da hierarquia da sua empresa:</strong> o que você cadastra fica visível para você e para quem está acima de você na equipe (coordenador, gerente e proprietário da revenda).</li>
             <li><strong>Escritório jurídico parceiro:</strong> somente os dados dos clientes que a equipe indicar para atendimento jurídico.</li>
             <li><strong>Provedores de infraestrutura:</strong> o Supabase (banco de dados, autenticação e armazenamento de arquivos) e o provedor de hospedagem do site, que tratam os dados apenas para operar o serviço.</li>
+            <li><strong>Provedor de transcrição:</strong> o serviço de reconhecimento de fala (inteligência artificial) que recebe somente os áudios que o usuário pede para transcrever, apenas para devolver o texto.</li>
             <li><strong>Autoridades:</strong> quando houver obrigação legal ou ordem judicial.</li>
           </ul>
         </Bloco>
@@ -101,7 +107,7 @@ export function PoliticaPrivacidade() {
           <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
             <li><strong>Armazenamento (storage):</strong> guardar a sessão de login no navegador.</li>
             <li><strong>Acesso a web.whatsapp.com:</strong> mostrar o painel do Advox ao lado da conversa e identificar o contato que está aberto.</li>
-            <li><strong>Acesso ao servidor do Advox (supabase.co):</strong> ler e gravar os dados do CRM da sua conta.</li>
+            <li><strong>Acesso ao servidor do Advox (supabase.co):</strong> ler e gravar os dados do CRM da sua conta e enviar para transcrição os áudios que você pedir.</li>
           </ul>
           <p style={{ margin: 0 }}>A extensão não funciona em nenhum outro site e não executa código baixado da internet.</p>
         </Bloco>

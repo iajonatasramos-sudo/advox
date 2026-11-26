@@ -19,6 +19,7 @@ O que dá para fazer:
 • Registrar anotações e o histórico de contatos do cliente.
 • Agendar ligações, visitas, reuniões e retornos na Minha agenda, com visão por dia, semana e mês.
 • Usar mensagens rápidas com atalho "/" e organizá-las por categoria, inclusive mensagens compartilhadas pela equipe.
+• Transcrever mensagens de áudio em texto com um clique.
 • Separar conversas em pastas e etiquetas.
 • Indicar ao escritório jurídico o cliente preso em contrato abusivo ("Desbloquear cliente").
 • Abrir o painel completo do Advox já logado.
@@ -27,7 +28,7 @@ Para quem é:
 Equipes comerciais das revendas parceiras da Advox Telecom (consultores, coordenadores, gerentes e proprietários). É preciso ter uma conta ativa no Advox; o acesso é o mesmo e-mail e senha do app.
 
 Privacidade:
-A extensão não lê nem guarda o conteúdo das suas conversas. Ela usa apenas o nome e o número do contato aberto para encontrar o lead, e só envia uma mensagem quando você escolhe uma mensagem rápida.
+A extensão não lê nem guarda o conteúdo das suas conversas. Ela usa apenas o nome e o número do contato aberto para encontrar o lead, e só envia uma mensagem quando você escolhe uma mensagem rápida. Um áudio só é enviado para transcrição quando você clica em "Transcrever" nele, e o texto não fica guardado.
 
 A AdvoxChat é uma ferramenta independente da Advox Telecom e não é desenvolvida, mantida nem endossada pelo WhatsApp ou pela Meta.
 
@@ -57,7 +58,7 @@ ABA "PRIVACY" (Práticas de privacidade)
 ======================================================================
 
 Finalidade única (Single purpose):
-Mostrar o CRM do Advox ao lado das conversas do WhatsApp Web, para o consultor consultar e atualizar o lead do cliente, registrar anotações e atividades e usar mensagens rápidas.
+Mostrar o CRM do Advox ao lado das conversas do WhatsApp Web, para o consultor consultar e atualizar o lead do cliente, registrar anotações e atividades, usar mensagens rápidas e transcrever áudios do cliente.
 
 Justificativa — storage:
 Guarda no navegador a sessão de login do usuário no Advox, para ele não precisar entrar de novo a cada vez que abre o WhatsApp Web.
@@ -66,7 +67,7 @@ Justificativa — permissão de host https://web.whatsapp.com/*:
 É o único site onde a extensão funciona: ela mostra o painel do Advox ao lado da conversa e identifica o número do contato que está aberto para localizar o lead correspondente.
 
 Justificativa — permissão de host https://ubnceeshmwzgwarprbht.supabase.co/*:
-É o servidor do Advox (banco de dados e login). A extensão lê e grava ali os dados do CRM da conta do próprio usuário.
+É o servidor do Advox (banco de dados, login e transcrição). A extensão lê e grava ali os dados do CRM da conta do próprio usuário e envia para transcrição apenas os áudios em que o usuário clica em "Transcrever".
 
 Código remoto (Remote code):
 Não, não uso código remoto. (Todo o JavaScript, inclusive a biblioteca de integração com o WhatsApp Web, vai dentro do pacote.)
@@ -74,7 +75,8 @@ Não, não uso código remoto. (Todo o JavaScript, inclusive a biblioteca de int
 Dados coletados — marcar:
 [x] Informações de identificação pessoal (nome, e-mail, telefone do contato da conversa)
 [x] Informações de autenticação (login e sessão)
-[x] Conteúdo do usuário (anotações, atividades e mensagens rápidas que o próprio usuário escreve)
+[x] Conteúdo do usuário (anotações, atividades e mensagens rápidas que o próprio usuário escreve; áudios que ele pede para transcrever)
+[x] Comunicações (somente o áudio escolhido para transcrição — não é guardado)
 [ ] Informações de saúde, financeiras, localização, histórico da web, atividade do usuário — NÃO marcar
 
 Declarações (marcar as três):

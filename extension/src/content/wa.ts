@@ -171,3 +171,33 @@ export function limparCaixa() {
   document.execCommand('selectAll', false);
   document.execCommand('delete', false);
 }
+
+// ─────────────── Áudio (transcrição) ───────────────
+
+/** Hashes das mensagens de áudio da conversa aberta (vazio se a ponte não responder). */
+export async function idsDeAudioDoChat(): Promise<string[]> {
+  if (!bridgePronta) return [];
+  try {
+    const r = await chamar<{ ids: string[] }>('audiosDoChat', undefined, 8000);
+    return r?.ids ?? [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Áudio de uma mensagem como Blob. Primeiro o caminho barato (o blob URL do
+ * <audio> da bolha, se a pessoa já tocou); senão o WPP baixa e descriptografa.
+ */
+export async function obterAudioDaMensagem(audioEl: HTMLAudioElement | null, msgId: string | null): Promise<Blob> {
+  const src = audioEl?.getAttribute('src') || audioEl?.src || '';
+  if (src && !src.startsWith('data:')) {
+    try {
+      const blob = await (await fetch(src)).blob();
+      if (blob.size > 0) return blob;
+    } catch { /* blob revogado — segue para o WPP */ }
+  }
+  if (!msgId) throw new Error('Não consegui identificar este áudio. Toque nele uma vez e tente de novo.');
+  const r = await chamar<{ dataUrl: string }>('downloadMedia', { msgId }, 60000);
+  return await (await fetch(r.dataUrl)).blob();
+}

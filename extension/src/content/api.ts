@@ -426,3 +426,28 @@ export async function apagarAnotacao(id: string): Promise<string | null> {
   const { error } = await sb.from('anotacoes').delete().eq('id', id);
   return error ? msg(error) : null;
 }
+
+// ─────────────── Transcrição de áudio (Edge Function "transcrever") ───────────────
+
+const LIMITE_AUDIO = 25 * 1024 * 1024;
+
+/** Manda o áudio e devolve o texto. Erros sobem com a mensagem amigável. */
+export async function transcreverAudio(audio: Blob): Promise<string> {
+  if (audio.size === 0) throw new Error('Não consegui ler este áudio. Toque nele uma vez e tente de novo.');
+  if (audio.size > LIMITE_AUDIO) throw new Error('Áudio maior que 25 MB.');
+  const token = (await sessaoAtual())?.access_token;
+  if (!token) throw new Error('Sessão expirada. Entre de novo na sua conta.');
+
+  const corpo = new FormData();
+  corpo.append('file', audio, 'audio.ogg');
+  const r = await fetch(`${URL}/functions/v1/transcrever`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, apikey: KEY },
+    body: corpo,
+  });
+  const j = (await r.json().catch(() => null)) as { ok?: boolean; texto?: string; erro?: string } | null;
+  if (j?.ok && j.texto?.trim()) return j.texto.trim();
+  if (j?.erro) throw new Error(j.erro);
+  if (r.status === 401) throw new Error('Sessão expirada. Entre de novo na sua conta.');
+  throw new Error(`Falha ao transcrever (${r.status}).`);
+}
